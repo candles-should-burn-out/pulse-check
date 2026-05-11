@@ -59,3 +59,39 @@ func TestReadinessReflectsAppState(t *testing.T) {
 		t.Fatalf("not ready status = %d, want %d", recorder.Code, http.StatusServiceUnavailable)
 	}
 }
+
+func TestSwaggerReturnsOpenAPISchema(t *testing.T) { // TODO: Удалить кринжу
+	app := NewApp(slog.New(slog.NewTextHandler(io.Discard, nil)))
+	handler := app.Routes()
+
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/swagger/", nil))
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
+	}
+
+	if contentType := recorder.Header().Get("Content-Type"); !strings.Contains(contentType, "application/json") {
+		t.Fatalf("content type = %q, want application/json", contentType)
+	}
+
+	var schema map[string]any
+	if err := json.NewDecoder(recorder.Body).Decode(&schema); err != nil {
+		t.Fatalf("decode openapi schema: %v", err)
+	}
+
+	if schema["openapi"] != "3.0.3" {
+		t.Fatalf("openapi = %v, want 3.0.3", schema["openapi"])
+	}
+
+	paths, ok := schema["paths"].(map[string]any)
+	if !ok {
+		t.Fatalf("paths has unexpected type: %T", schema["paths"])
+	}
+
+	for _, path := range []string{"/entities", "/metrics", "/swagger/", "/health/live", "/health/ready", "/health/startup"} {
+		if _, ok := paths[path]; !ok {
+			t.Fatalf("schema does not describe %s", path)
+		}
+	}
+}

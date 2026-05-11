@@ -18,6 +18,7 @@ HTTP_ADDR=:9090 go run ./cmd/app
 
 - `GET /entities` returns a hardcoded entity list.
 - `GET /metrics` exposes `pulse_check_entity_list_requests_total` in Prometheus text format.
+- `GET /swagger/` returns the OpenAPI 3.0 schema.
 - `GET /health/live` and `GET /livez` are liveness probes.
 - `GET /health/ready` and `GET /readyz` are readiness probes.
 - `GET /health/startup` and `GET /startupz` are startup probes.
