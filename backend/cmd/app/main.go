@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	backend "pulse-check-backend/internal"
 	"syscall"
 	"time"
 )
@@ -14,12 +15,12 @@ import (
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
-	cfg := Config{
+	cfg := backend.Config{
 		Addr:            envString("HTTP_ADDR", ":8080"),
 		ShutdownTimeout: 10 * time.Second,
 	}
 
-	app := NewApp(logger)
+	app := backend.NewApp(logger)
 	server := &http.Server{
 		Addr:              cfg.Addr,
 		Handler:           app.Routes(),

@@ -5,13 +5,13 @@ Minimal Go HTTP service stub.
 ## Run
 
 ```sh
-go run .
+go run ./cmd/app
 ```
 
 The server listens on `:8080` by default. Override it with `HTTP_ADDR`, for example:
 
 ```sh
-HTTP_ADDR=:9090 go run .
+HTTP_ADDR=:9090 go run ./cmd/app
 ```
 
 ## Endpoints
