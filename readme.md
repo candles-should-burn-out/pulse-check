@@ -63,4 +63,4 @@ if (navigator.storage?.persist) {
 
 ## Backend
 
-- Сервер хранит только идентификаторы сущностей (entity_id), статусы (id, name) и агрегированные счётчики (client_id, status_id, count)
+- Сервер хранит только идентификаторы сущностей (entity_id), статусы (state_id, name) и агрегированные счётчики (client_id, status_id, count)
