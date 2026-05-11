@@ -17,7 +17,17 @@ func main() {
 
 	cfg := backend.Config{
 		Addr:            envString("HTTP_ADDR", ":8080"),
+		ServiceName:     envString("OTEL_SERVICE_NAME", "pulse-check-backend"),
 		ShutdownTimeout: 10 * time.Second,
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	tracerProvider, err := backend.InitTracerProvider(ctx, cfg.ServiceName)
+	if err != nil {
+		logger.Error("init tracer provider failed", slog.Any("error", err))
+		os.Exit(1)
 	}
 
 	app := backend.NewApp(logger)
@@ -26,9 +36,6 @@ func main() {
 		Handler:           app.Routes(),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 
 	errCh := make(chan error, 1)
 	go func() {
@@ -58,6 +65,11 @@ func main() {
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		logger.Error("graceful shutdown failed", slog.Any("error", err))
+		os.Exit(1)
+	}
+
+	if err := tracerProvider.Shutdown(shutdownCtx); err != nil {
+		logger.Error("tracer provider shutdown failed", slog.Any("error", err))
 		os.Exit(1)
 	}
 

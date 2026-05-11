@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 	"sync/atomic"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 const entityListRequestsMetric = "pulse_check_entity_list_requests_total"
@@ -43,7 +45,13 @@ func (a *App) Routes() http.Handler {
 	mux.HandleFunc("/readyz", a.handleReady)
 	mux.HandleFunc("/startupz", a.handleStartup)
 
-	return withAccessLog(a.logger, mux)
+	return otelhttp.NewHandler(
+		withAccessLog(a.logger, mux),
+		"http.server",
+		otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
+			return r.Method + " " + r.URL.Path
+		}),
+	)
 }
 
 func (a *App) SetReady(ready bool) {

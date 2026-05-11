@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"go.opentelemetry.io/otel/trace"
 )
 
 type statusRecorder struct {
@@ -22,6 +24,7 @@ func withAccessLog(logger *slog.Logger, next http.Handler) http.Handler {
 		recorder := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 
 		next.ServeHTTP(recorder, r)
+		spanContext := trace.SpanContextFromContext(r.Context())
 
 		logger.Info(
 			"http request handled",
@@ -29,6 +32,8 @@ func withAccessLog(logger *slog.Logger, next http.Handler) http.Handler {
 			slog.String("path", r.URL.Path),
 			slog.Int("status", recorder.status),
 			slog.Duration("duration", time.Since(startedAt)),
+			slog.String("trace_id", spanContext.TraceID().String()), // TODO: Каждый раз так писать?
+			slog.String("span_id", spanContext.SpanID().String()),
 		)
 	})
 }
