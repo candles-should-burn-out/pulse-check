@@ -1,0 +1,57 @@
+version: "3"
+
+vars:
+  COMPOSE: docker compose -f local-compose.yaml
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  up:
+    desc: Build and start backend and frontend
+    cmds:
+      - "{{.COMPOSE}} up --build -d"
+      - "{{.COMPOSE}} ps"
+
+  down:
+    desc: Stop and remove containers
+    cmds:
+      - "{{.COMPOSE}} down"
+
+  restart:
+    desc: Restart the local stack
+    cmds:
+      - task: down
+      - task: up
+
+  build:
+    desc: Build Docker images
+    cmds:
+      - "{{.COMPOSE}} build"
+
+  logs:
+    desc: Follow logs for all services
+    cmds:
+      - "{{.COMPOSE}} logs -f"
+
+  backend-logs:
+    desc: Follow backend logs
+    cmds:
+      - "{{.COMPOSE}} logs -f backend"
+
+  frontend-logs:
+    desc: Follow frontend logs
+    cmds:
+      - "{{.COMPOSE}} logs -f frontend"
+
+  ps:
+    desc: Show service status
+    cmds:
+      - "{{.COMPOSE}} ps"
+
+  clean:
+    desc: Stop the stack and remove local images
+    cmds:
+      - "{{.COMPOSE}} down --rmi local --remove-orphans"
