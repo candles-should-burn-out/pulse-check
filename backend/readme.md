@@ -34,3 +34,9 @@ Useful environment variables:
 - `OTEL_SERVICE_NAME` sets the service name. Default: `pulse-check-backend`.
 - `OTEL_EXPORTER_OTLP_ENDPOINT` sets the OTLP endpoint. Example: `http://localhost:4318`.
 - `OTEL_EXPORTER_OTLP_HEADERS` sets OTLP headers when your collector requires them.
+
+## Docker
+
+```sh
+docker build -t pulse-check-backend:local .
+```

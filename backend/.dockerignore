@@ -1,0 +1,5 @@
+.git
+.gocache
+Dockerfile
+*.test
+coverage.out
