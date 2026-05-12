@@ -63,18 +63,24 @@ func main() {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
 	defer cancel()
 
+	var shutdownErr error
+
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		logger.Error("graceful shutdown failed", slog.Any("error", err))
-		os.Exit(1)
+		shutdownErr = errors.Join(shutdownErr, err)
 	}
 
 	if err := tracerProvider.Shutdown(shutdownCtx); err != nil {
 		logger.Error("tracer provider shutdown failed", slog.Any("error", err))
-		os.Exit(1)
+		shutdownErr = errors.Join(shutdownErr, err)
 	}
 
 	if err := <-errCh; err != nil {
 		logger.Error("http server stopped with error", slog.Any("error", err))
+		shutdownErr = errors.Join(shutdownErr, err)
+	}
+
+	if shutdownErr != nil {
 		os.Exit(1)
 	}
 
