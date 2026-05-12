@@ -7,24 +7,26 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	backend "pulse-check-backend/internal"
 	"syscall"
 	"time"
+
+	backend "pulse-check-backend/internal"
+	utils "pulse-check-backend/internal/utils"
 )
 
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
 	cfg := backend.Config{
-		Addr:            envString("HTTP_ADDR", ":8080"),
-		ServiceName:     envString("OTEL_SERVICE_NAME", "pulse-check-backend"),
+		Addr:            utils.EnvString("HTTP_ADDR", ":8080"),
+		ServiceName:     utils.EnvString("OTEL_SERVICE_NAME", "pulse-check-backend"),
 		ShutdownTimeout: 10 * time.Second,
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	tracerProvider, err := backend.InitTracerProvider(ctx, cfg.ServiceName)
+	tracerProvider, err := utils.InitTracerProvider(ctx, cfg.ServiceName)
 	if err != nil {
 		logger.Error("init tracer provider failed", slog.Any("error", err))
 		os.Exit(1)
@@ -85,12 +87,4 @@ func main() {
 	}
 
 	logger.Info("http server stopped")
-}
-
-func envString(name string, fallback string) string {
-	if value := os.Getenv(name); value != "" {
-		return value
-	}
-
-	return fallback
 }

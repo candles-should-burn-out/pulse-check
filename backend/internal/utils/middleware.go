@@ -1,4 +1,4 @@
-package internal
+package utils
 
 import (
 	"log/slog"
@@ -18,7 +18,7 @@ func (r *statusRecorder) WriteHeader(status int) {
 	r.ResponseWriter.WriteHeader(status)
 }
 
-func withAccessLog(logger *slog.Logger, next http.Handler) http.Handler {
+func WithAccessLog(logger *slog.Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		startedAt := time.Now()
 		recorder := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
@@ -32,7 +32,7 @@ func withAccessLog(logger *slog.Logger, next http.Handler) http.Handler {
 			slog.String("path", r.URL.Path),
 			slog.Int("status", recorder.status),
 			slog.Duration("duration", time.Since(startedAt)),
-			slog.String("trace_id", spanContext.TraceID().String()), // TODO: Каждый раз так писать?
+			slog.String("trace_id", spanContext.TraceID().String()),
 			slog.String("span_id", spanContext.SpanID().String()),
 		)
 	})

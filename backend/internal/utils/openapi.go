@@ -1,6 +1,6 @@
-package internal
+package utils
 
-const openAPISchema = `{
+const OpenAPISchema = `{
   "openapi": "3.0.3",
   "info": {
     "title": "Pulse Check Backend API",

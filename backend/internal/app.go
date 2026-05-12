@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"pulse-check-backend/internal/utils"
 )
 
 const entityListRequestsMetric = "pulse_check_entity_list_requests_total"
@@ -46,7 +47,7 @@ func (a *App) Routes() http.Handler {
 	mux.HandleFunc("/startupz", a.handleStartup)
 
 	return otelhttp.NewHandler(
-		withAccessLog(a.logger, mux),
+		utils.WithAccessLog(a.logger, mux),
 		"http.server",
 		otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
 			return r.Method + " " + r.URL.Path
@@ -93,7 +94,7 @@ func (a *App) handleSwagger(w http.ResponseWriter, r *http.Request) { // TODO: Ð
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(openAPISchema))
+	_, _ = w.Write([]byte(utils.OpenAPISchema))
 }
 
 func (a *App) handleLive(w http.ResponseWriter, r *http.Request) {
