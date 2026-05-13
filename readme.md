@@ -67,18 +67,31 @@ if (navigator.storage?.persist) {
 
 ## Локальный стенд
 
-`local-compose.yaml` поднимает приложение и инфраструктуру для просмотра трейсов:
+`local-compose.yaml` поднимает приложение и инфраструктуру для просмотра трейсов и логов бекенда:
 
 - `backend` экспортирует трейсы по OTLP/HTTP в `otel-collector:4318`
 - `frontend` экспортирует браузерные fetch-трейсы по OTLP/HTTP в `http://localhost:4318`
 - `otel-collector` принимает OTLP/gRPC на `4317` и OTLP/HTTP на `4318`
 - `tempo` хранит трейсы и открывает HTTP API на `3200`
-- `grafana` доступна на `http://localhost:3001` с заранее настроенным datasource `Tempo`
+- `loki` хранит логи бекенда и открывает HTTP API на `3100`
+- `alloy` читает stdout/stderr Docker-контейнера `backend` и отправляет записи в Loki
+- `grafana` доступна на `http://localhost:3001` с заранее настроенными datasource `Tempo` и `Loki`
 
 Поток трейсов: `backend/frontend -> OTel Collector -> Tempo -> Grafana`.
+Поток логов: `backend stdout/stderr -> Alloy -> Loki -> Grafana`.
+
+Логи бекенда можно смотреть в Grafana через `Explore -> Loki`. Базовый LogQL-запрос:
+
+```logql
+{compose_project="pulse-check", compose_service="backend"}
+```
+
+Access logs бекенда пишутся в JSON и содержат `trace_id`, поэтому из логов в Grafana можно переходить к связанным трейсам в Tempo.
 
 Конфиги наблюдаемости лежат в `observability/`:
 
+- `observability/alloy/config.alloy`
+- `observability/loki.yaml`
 - `observability/otel-collector.yaml`
 - `observability/tempo.yaml`
 - `observability/grafana/datasources/tempo.yaml`
