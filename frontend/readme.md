@@ -39,6 +39,19 @@ To point the frontend at another API base URL without the dev proxy, create `.en
 VITE_API_BASE_URL=http://localhost:8080
 ```
 
+## Tracing
+
+The frontend uses OpenTelemetry Web SDK and fetch instrumentation. Tracing is enabled when `VITE_OTEL_EXPORTER_OTLP_ENDPOINT` is set.
+
+For the local compose stack, the browser sends OTLP/HTTP traces to the collector through the host-published port:
+
+```sh
+VITE_OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+VITE_OTEL_SERVICE_NAME=pulse-check-frontend
+```
+
+The exporter appends `/v1/traces` automatically when the endpoint does not include it.
+
 ## Docker
 
 Build the nginx image with the static frontend bundle:
@@ -57,4 +70,10 @@ The frontend uses `/api` as the default API base URL. To bake another API URL in
 
 ```sh
 docker build --build-arg VITE_API_BASE_URL=http://backend:8080 -t pulse-check-frontend:local .
+```
+
+To bake browser trace export into the bundle, pass the collector endpoint too:
+
+```sh
+docker build --build-arg VITE_OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 -t pulse-check-frontend:local .
 ```

@@ -28,6 +28,8 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_BASE_URL: /api
+        VITE_OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4318
+        VITE_OTEL_SERVICE_NAME: pulse-check-frontend
     image: pulse-check-frontend:local
     ports:
       - "3000:80"
