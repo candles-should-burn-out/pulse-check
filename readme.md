@@ -64,3 +64,26 @@ if (navigator.storage?.persist) {
 ## Backend
 
 - Сервер хранит только идентификаторы сущностей (entity_id), статусы (state_id, name) и агрегированные счётчики (client_id, status_id, count)
+
+## Локальный стенд
+
+`local-compose.yaml` поднимает приложение и инфраструктуру для просмотра трейсов:
+
+- `backend` экспортирует трейсы по OTLP/HTTP в `otel-collector:4318`
+- `otel-collector` принимает OTLP/gRPC на `4317` и OTLP/HTTP на `4318`
+- `tempo` хранит трейсы и открывает HTTP API на `3200`
+- `grafana` доступна на `http://localhost:3001` с заранее настроенным datasource `Tempo`
+
+Поток трейсов: `backend -> OTel Collector -> Tempo -> Grafana`.
+
+Конфиги наблюдаемости лежат в `observability/`:
+
+- `observability/otel-collector.yaml`
+- `observability/tempo.yaml`
+- `observability/grafana/datasources/tempo.yaml`
+
+Запуск, когда понадобится:
+
+```sh
+task up
+```

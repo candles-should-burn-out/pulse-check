@@ -10,7 +10,7 @@ tasks:
       - task --list
 
   up:
-    desc: Build and start backend and frontend
+    desc: Build and start the local stack
     cmds:
       - "{{.COMPOSE}} up --build -d"
       - "{{.COMPOSE}} ps"
