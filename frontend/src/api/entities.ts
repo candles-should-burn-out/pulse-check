@@ -5,11 +5,15 @@ export type Entity = {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
-export async function fetchEntities(signal?: AbortSignal): Promise<Entity[]> {
+export async function fetchEntities(
+  accessToken: string,
+  signal?: AbortSignal
+): Promise<Entity[]> {
   const response = await fetch(`${API_BASE_URL}/entities`, {
     method: "GET",
     headers: {
       Accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
     },
     signal,
   });

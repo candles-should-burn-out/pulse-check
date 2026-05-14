@@ -10,9 +10,14 @@ services:
       HTTP_ADDR: :8080
       OTEL_SERVICE_NAME: pulse-check-backend
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OIDC_ISSUER: http://localhost:8081/realms/pulse-check
+      OIDC_JWKS_URL: http://keycloak:8080/realms/pulse-check/protocol/openid-connect/certs
+      OIDC_AUDIENCE: pulse-check-api
     ports:
       - "8080:8080"
     depends_on:
+      keycloak:
+        condition: service_healthy
       otel-collector:
         condition: service_started
     healthcheck:
@@ -28,6 +33,9 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_BASE_URL: /api
+        VITE_KEYCLOAK_URL: http://localhost:8081
+        VITE_KEYCLOAK_REALM: pulse-check
+        VITE_KEYCLOAK_CLIENT_ID: pulse-check-frontend
         VITE_OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4318
         VITE_OTEL_SERVICE_NAME: pulse-check-frontend
     image: pulse-check-frontend:local
@@ -42,6 +50,53 @@ services:
       timeout: 3s
       retries: 5
       start_period: 5s
+
+  keycloak-postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${KEYCLOAK_DB_NAME:-keycloak}
+      POSTGRES_USER: ${KEYCLOAK_DB_USER:-keycloak}
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-pulse-check-local-db-password}
+    volumes:
+      - keycloak-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.6.1
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL_HOST: keycloak-postgres
+      KC_DB_URL_DATABASE: ${KEYCLOAK_DB_NAME:-keycloak}
+      KC_DB_USERNAME: ${KEYCLOAK_DB_USER:-keycloak}
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-pulse-check-local-db-password}
+      KC_HEALTH_ENABLED: "true"
+      KC_HOSTNAME: http://localhost:8081
+      KC_HTTP_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-pulse-check-local-admin-password}
+    volumes:
+      - ./keycloak/pulse-check-realm.json:/opt/keycloak/data/import/pulse-check-realm.json:ro
+    ports:
+      - "8081:8080"
+    depends_on:
+      keycloak-postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "bash -ec 'exec 3<>/dev/tcp/127.0.0.1/9000; printf \"GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n\" >&3; grep -q \"200 OK\" <&3'",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.102.1
@@ -138,6 +193,7 @@ services:
 volumes:
   alloy-data:
   grafana-data:
+  keycloak-postgres-data:
   loki-data:
   prometheus-data:
   tempo-data:

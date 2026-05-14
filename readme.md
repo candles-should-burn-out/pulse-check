@@ -65,12 +65,43 @@ if (navigator.storage?.persist) {
 
 - Сервер хранит только идентификаторы сущностей (entity_id), статусы (state_id, name) и агрегированные счётчики (client_id, status_id, count)
 
+## Авторизация
+
+Выбран self-hosted Keycloak + PostgreSQL.
+
+Причина выбора: нужна бесплатная open-source система управления пользователями с несколькими администраторами, блокировками, сбросом пароля и стандартным OIDC. Logto OSS рассматривался, но не подошёл из-за ограничения на одну админ-учётку в self-hosted OSS варианте.
+
+Модель доступа:
+
+- `/` — публичная стартовая страница без авторизации.
+- `/app/*` — рабочая область, доступна только после входа.
+- Пользовательская регистрация выключена.
+- Базовый вход: email + password.
+- Администраторы создают, отключают, блокируют пользователей и сбрасывают пароль через Keycloak Admin Console.
+- Первый вход пользователя должен проходить через required actions Keycloak: `VERIFY_EMAIL` и `UPDATE_PASSWORD`.
+- Pulse Check не хранит пароли и не реализует собственную регистрацию.
+- Система пригласительных кодов будет отдельным слоем допуска и не заменяет Keycloak user management.
+
+OIDC-клиенты:
+
+- `pulse-check-frontend` — public SPA client, Authorization Code Flow + PKCE S256.
+- `pulse-check-api` — backend audience/resource. Access token frontend-клиента должен содержать `aud=pulse-check-api`.
+
+Backend защищает product API через Bearer JWT:
+
+- публичные endpoints: health checks, `/metrics`, `/swagger/`;
+- защищенные endpoints: `/entities` и будущие product API;
+- проверяются подпись через JWKS, `iss`, `aud`, `exp`, `nbf`;
+- Keycloak `issuer` и внутренний Docker `JWKS URL` настраиваются отдельно, потому что браузер и backend видят Keycloak по разным адресам.
+
 ## Локальный стенд
 
 `local-compose.yaml` поднимает приложение и инфраструктуру для просмотра трейсов и логов бекенда:
 
 - `backend` экспортирует трейсы по OTLP/HTTP в `otel-collector:4318`
 - `frontend` экспортирует браузерные fetch-трейсы по OTLP/HTTP в `http://localhost:4318`
+- `keycloak` поднимает локальную OIDC-авторизацию на `http://localhost:8081`
+- `keycloak-postgres` хранит состояние Keycloak в named volume `keycloak-postgres-data`
 - `otel-collector` принимает OTLP/gRPC на `4317` и OTLP/HTTP на `4318`
 - `tempo-init` подготавливает права на volume `tempo-data`
 - `tempo` хранит трейсы и открывает HTTP API на `3200`
@@ -110,3 +141,68 @@ Access logs бекенда пишутся в JSON и содержат `trace_id`
 ```sh
 task up
 ```
+
+Локальная проверка авторизации:
+
+1. Открыть frontend: `http://localhost:3000`.
+2. Открыть Keycloak Admin Console: `http://localhost:8081/admin`.
+3. Войти локальным bootstrap-админом из `.env` или дефолтом `admin` / `pulse-check-local-admin-password`.
+4. Перейти в realm `pulse-check`.
+5. Создать пользователя, указать email, включить `Email verified` для локального стенда или настроить SMTP.
+6. В `Credentials` задать временный пароль.
+7. Открыть `http://localhost:3000/app`, войти созданным пользователем и загрузить сущности.
+
+Для локальной настройки можно скопировать `.env.example` в `.env` и заменить секреты. Файл `.env` не коммитится.
+
+## Production: VPS + Docker Compose
+
+Шаблон первого production-деплоя лежит в `production-compose.example.yaml`. Он рассчитан на один VPS, где внешний reverse proxy терминирует HTTPS и проксирует:
+
+- публичный frontend домен на `127.0.0.1:3000`;
+- публичный Keycloak домен на `127.0.0.1:8081`.
+
+Минимальный порядок запуска:
+
+1. Скопировать `.env.example` в защищённый env-файл на сервере.
+2. Задать реальные секреты `KEYCLOAK_ADMIN_PASSWORD` и `KEYCLOAK_DB_PASSWORD`.
+3. Задать публичные URL:
+   - `APP_PUBLIC_URL=https://app.example.com`
+   - `KEYCLOAK_PUBLIC_URL=https://auth.example.com`
+   - `VITE_KEYCLOAK_URL=https://auth.example.com`
+   - `OIDC_ISSUER=https://auth.example.com/realms/pulse-check`
+   - `OIDC_JWKS_URL=http://keycloak:8080/realms/pulse-check/protocol/openid-connect/certs`
+4. Настроить HTTPS reverse proxy и заголовки `X-Forwarded-*`.
+5. Поднять стек через `docker compose --env-file <env-file> -f production-compose.example.yaml up -d --build`.
+6. В Keycloak создать или импортировать realm `pulse-check`, затем заменить локальные redirect/web origins на production-домены.
+7. Настроить SMTP в realm, иначе verify email и password reset не будут нормально работать.
+
+Production checklist:
+
+- HTTPS обязателен для frontend и Keycloak.
+- `KC_HOSTNAME` должен совпадать с публичным Keycloak URL.
+- Redirect URIs, Web Origins и Post Logout Redirect URIs должны содержать только реальные production-домены.
+- Self-registration в realm должна быть выключена.
+- Bootstrap admin password нельзя оставлять дефолтным.
+- Секреты должны жить вне git: env-файл, secret manager или protected CI variables.
+- Нужен регулярный backup базы `keycloak-postgres`.
+- Нужен понятный порядок rotation секретов: Keycloak admin, Keycloak DB password и секреты reverse proxy/CI.
+- Перед ротацией URL/секретов проверить, что frontend build args и backend OIDC env синхронизированы.
+- Disabled user перестает получать новые refresh/access tokens; уже выданный access token живет до истечения срока.
+
+## Test plan
+
+Автоматическая проверка:
+
+```sh
+cd backend && go test ./...
+cd frontend && npm run lint
+cd frontend && npm run build
+```
+
+Ручная проверка:
+
+- `/` открывается без авторизации.
+- `/app` редиректит на Keycloak.
+- После входа frontend отправляет `Authorization: Bearer <token>` и API работает.
+- Disabled user теряет доступ после истечения текущего access token или при обновлении сессии.
+- Logout возвращает пользователя на публичную страницу.

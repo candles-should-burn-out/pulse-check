@@ -12,6 +12,11 @@ const OpenAPISchema = `{
       "get": {
         "summary": "List entities",
         "operationId": "listEntities",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Hardcoded entity list.",
@@ -25,6 +30,12 @@ const OpenAPISchema = `{
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "405": {
             "$ref": "#/components/responses/MethodNotAllowed"
@@ -213,6 +224,13 @@ const OpenAPISchema = `{
     }
   },
   "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
     "schemas": {
       "Entity": {
         "type": "object",
@@ -266,6 +284,32 @@ const OpenAPISchema = `{
             },
             "example": {
               "status": "ok"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Bearer token is missing or invalid.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": "missing_bearer_token"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Bearer token is valid but lacks the required role.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": "missing_required_role"
             }
           }
         }

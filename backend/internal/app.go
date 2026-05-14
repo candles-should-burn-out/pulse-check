@@ -15,6 +15,8 @@ const entityListRequestsMetric = "pulse_check_entity_list_requests_total"
 
 type App struct {
 	logger             *slog.Logger
+	authenticator      *Authenticator
+	authError          error
 	entityListRequests atomic.Uint64
 	ready              atomic.Bool
 	started            atomic.Bool
@@ -25,9 +27,19 @@ type Entity struct {
 	State string `json:"state"`
 }
 
-func NewApp(logger *slog.Logger) *App {
+func NewApp(logger *slog.Logger, authConfig ...AuthConfig) *App {
 	app := &App{logger: logger}
-	app.ready.Store(true)
+	authReady := true
+	if len(authConfig) > 0 {
+		authenticator, err := NewAuthenticator(authConfig[0])
+		if err != nil && err != errAuthDisabled {
+			logger.Error("auth configuration failed", slog.Any("error", err))
+			app.authError = err
+			authReady = false
+		}
+		app.authenticator = authenticator
+	}
+	app.ready.Store(authReady)
 	app.started.Store(true)
 
 	return app
@@ -35,7 +47,7 @@ func NewApp(logger *slog.Logger) *App {
 
 func (a *App) Routes() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/entities", a.handleEntities)
+	mux.Handle("/entities", a.protected(http.HandlerFunc(a.handleEntities)))
 	mux.HandleFunc("/metrics", a.handleMetrics)
 	mux.HandleFunc("/swagger/", a.handleSwagger)
 
@@ -53,6 +65,19 @@ func (a *App) Routes() http.Handler {
 			return r.Method + " " + r.URL.Path
 		}),
 	)
+}
+
+func (a *App) protected(next http.Handler) http.Handler {
+	if a.authError != nil {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			respondJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "auth_not_configured"})
+		})
+	}
+	if a.authenticator == nil {
+		return next
+	}
+
+	return a.authenticator.Middleware(next)
 }
 
 func (a *App) SetReady(ready bool) {

@@ -21,6 +21,12 @@ func main() {
 		Addr:            utils.EnvString("HTTP_ADDR", ":8080"),
 		ServiceName:     utils.EnvString("OTEL_SERVICE_NAME", "pulse-check-backend"),
 		ShutdownTimeout: 10 * time.Second,
+		Auth: backend.AuthConfig{
+			Issuer:       utils.EnvString("OIDC_ISSUER", ""),
+			JWKSURL:      utils.EnvString("OIDC_JWKS_URL", ""),
+			Audience:     utils.EnvString("OIDC_AUDIENCE", ""),
+			RequiredRole: utils.EnvString("OIDC_REQUIRED_ROLE", ""),
+		},
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -32,7 +38,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	app := backend.NewApp(logger)
+	app := backend.NewApp(logger, cfg.Auth)
 	server := &http.Server{
 		Addr:              cfg.Addr,
 		Handler:           app.Routes(),

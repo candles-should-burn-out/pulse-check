@@ -16,7 +16,7 @@ HTTP_ADDR=:9090 go run ./cmd/app
 
 ## Endpoints
 
-- `GET /entities` returns a hardcoded entity list.
+- `GET /entities` returns a hardcoded entity list and requires a valid Keycloak Bearer token when OIDC env vars are set.
 - `GET /metrics` exposes `pulse_check_entity_list_requests_total` in Prometheus text format.
 - `GET /swagger/` returns the OpenAPI 3.0 schema.
 - `GET /health/live` and `GET /livez` are liveness probes.
@@ -31,6 +31,10 @@ The service uses OpenTelemetry HTTP instrumentation and exports traces through O
 
 Useful environment variables:
 
+- `OIDC_ISSUER` sets the expected token issuer. Example: `http://localhost:8081/realms/pulse-check`.
+- `OIDC_JWKS_URL` sets the JWKS endpoint used by the backend. In Docker this can differ from `OIDC_ISSUER`. Example: `http://keycloak:8080/realms/pulse-check/protocol/openid-connect/certs`.
+- `OIDC_AUDIENCE` sets the required token audience. Default local value: `pulse-check-api`.
+- `OIDC_REQUIRED_ROLE` optionally requires a realm or resource role in access tokens.
 - `OTEL_SERVICE_NAME` sets the service name. Default: `pulse-check-backend`.
 - `OTEL_EXPORTER_OTLP_ENDPOINT` sets the OTLP endpoint. Example: `http://localhost:4318`.
 - `OTEL_EXPORTER_OTLP_HEADERS` sets OTLP headers when your collector requires them.

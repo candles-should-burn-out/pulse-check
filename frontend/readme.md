@@ -2,6 +2,9 @@
 
 Frontend stub for the Pulse Check backend.
 
+The public landing page is served at `/`. The working application is under
+`/app/*` and uses Keycloak OIDC login before calling protected backend APIs.
+
 ## Stack
 
 - React
@@ -39,6 +42,16 @@ To point the frontend at another API base URL without the dev proxy, create `.en
 VITE_API_BASE_URL=http://localhost:8080
 ```
 
+Keycloak settings are build-time Vite variables:
+
+```sh
+VITE_KEYCLOAK_URL=http://localhost:8081
+VITE_KEYCLOAK_REALM=pulse-check
+VITE_KEYCLOAK_CLIENT_ID=pulse-check-frontend
+```
+
+The local Docker stack provides these values automatically.
+
 ## Tracing
 
 The frontend uses OpenTelemetry Web SDK and fetch instrumentation. Tracing is enabled when `VITE_OTEL_EXPORTER_OTLP_ENDPOINT` is set.
@@ -70,6 +83,16 @@ The frontend uses `/api` as the default API base URL. To bake another API URL in
 
 ```sh
 docker build --build-arg VITE_API_BASE_URL=http://backend:8080 -t pulse-check-frontend:local .
+```
+
+To bake Keycloak settings into the production bundle, pass:
+
+```sh
+docker build \
+  --build-arg VITE_KEYCLOAK_URL=https://auth.example.com \
+  --build-arg VITE_KEYCLOAK_REALM=pulse-check \
+  --build-arg VITE_KEYCLOAK_CLIENT_ID=pulse-check-frontend \
+  -t pulse-check-frontend:local .
 ```
 
 To bake browser trace export into the bundle, pass the collector endpoint too:
