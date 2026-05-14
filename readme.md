@@ -72,6 +72,7 @@ if (navigator.storage?.persist) {
 - `backend` экспортирует трейсы по OTLP/HTTP в `otel-collector:4318`
 - `frontend` экспортирует браузерные fetch-трейсы по OTLP/HTTP в `http://localhost:4318`
 - `otel-collector` принимает OTLP/gRPC на `4317` и OTLP/HTTP на `4318`
+- `tempo-init` подготавливает права на volume `tempo-data`
 - `tempo` хранит трейсы и открывает HTTP API на `3200`
 - `loki` хранит логи бекенда и открывает HTTP API на `3100`
 - `alloy` читает stdout/stderr Docker-контейнера `backend` и отправляет записи в Loki

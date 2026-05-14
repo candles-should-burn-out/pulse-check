@@ -55,6 +55,13 @@ services:
       tempo:
         condition: service_started
 
+  tempo-init:
+    image: busybox:1.36
+    user: "0"
+    command: ["chown", "-R", "10001:10001", "/tmp/tempo"]
+    volumes:
+      - tempo-data:/tmp/tempo
+
   tempo:
     image: grafana/tempo:2.5.0
     command: ["-config.file=/etc/tempo.yaml"]
@@ -63,6 +70,9 @@ services:
       - tempo-data:/tmp/tempo
     ports:
       - "3200:3200"
+    depends_on:
+      tempo-init:
+        condition: service_completed_successfully
 
   loki:
     image: grafana/loki:3.1.0
