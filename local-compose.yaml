@@ -100,6 +100,20 @@ services:
       loki:
         condition: service_started
 
+  prometheus:
+    image: prom/prometheus:v2.53.1
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    volumes:
+      - ./observability/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      backend:
+        condition: service_healthy
+
   grafana:
     image: grafana/grafana:11.1.0
     environment:
@@ -108,6 +122,8 @@ services:
       GF_AUTH_DISABLE_LOGIN_FORM: "true"
     volumes:
       - ./observability/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./observability/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./observability/grafana/dashboard-definitions:/etc/grafana/dashboards:ro
       - grafana-data:/var/lib/grafana
     ports:
       - "3001:3000"
@@ -116,9 +132,12 @@ services:
         condition: service_started
       tempo:
         condition: service_started
+      prometheus:
+        condition: service_started
 
 volumes:
   alloy-data:
   grafana-data:
   loki-data:
+  prometheus-data:
   tempo-data:

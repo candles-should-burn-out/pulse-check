@@ -76,10 +76,15 @@ if (navigator.storage?.persist) {
 - `tempo` хранит трейсы и открывает HTTP API на `3200`
 - `loki` хранит логи бекенда и открывает HTTP API на `3100`
 - `alloy` читает stdout/stderr Docker-контейнера `backend` и отправляет записи в Loki
-- `grafana` доступна на `http://localhost:3001` с заранее настроенными datasource `Tempo` и `Loki`
+- `prometheus` собирает метрики бекенда с `/metrics` и открывает HTTP API на `9090`
+- `grafana` доступна на `http://localhost:3001` с заранее настроенными datasource `Prometheus`, `Tempo` и `Loki`
 
 Поток трейсов: `backend/frontend -> OTel Collector -> Tempo -> Grafana`.
 Поток логов: `backend stdout/stderr -> Alloy -> Loki -> Grafana`.
+Поток метрик: `backend /metrics -> Prometheus -> Grafana`.
+
+В Grafana автоматически создаётся папка `Pulse Check` с дашбордом `Backend entity list requests` для метрики `pulse_check_entity_list_requests_total`.
+Состояние Grafana хранится в named volume `grafana-data`, поэтому сохранённые через UI изменения дашбордов переживают перезапуск контейнеров.
 
 Логи бекенда можно смотреть в Grafana через `Explore -> Loki`. Базовый LogQL-запрос:
 
@@ -94,8 +99,11 @@ Access logs бекенда пишутся в JSON и содержат `trace_id`
 - `observability/alloy/config.alloy`
 - `observability/loki.yaml`
 - `observability/otel-collector.yaml`
+- `observability/prometheus.yaml`
 - `observability/tempo.yaml`
 - `observability/grafana/datasources/tempo.yaml`
+- `observability/grafana/dashboards/pulse-check.yaml`
+- `observability/grafana/dashboard-definitions/entity-list-requests.json`
 
 Запуск, когда понадобится:
 
