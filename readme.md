@@ -173,14 +173,17 @@ task up
    - `OIDC_JWKS_URL=http://keycloak:8080/realms/pulse-check/protocol/openid-connect/certs`
 4. Настроить HTTPS reverse proxy и заголовки `X-Forwarded-*`.
 5. Поднять стек через `docker compose --env-file <env-file> -f production-compose.example.yaml up -d --build`.
-6. В Keycloak создать или импортировать realm `pulse-check`, затем заменить локальные redirect/web origins на production-домены.
+6. До первого запуска заменить localhost Redirect URIs, Web Origins и Post Logout Redirect URIs в `keycloak/pulse-check-realm.json` на production-домены.
 7. Настроить SMTP в realm, иначе verify email и password reset не будут нормально работать.
+
+`production-compose.example.yaml` запускает Keycloak с `--import-realm` и монтирует `keycloak/pulse-check-realm.json`. Keycloak импортирует realm при старте только если realm с таким именем еще не существует; при последующих рестартах существующий `pulse-check` realm не перезатирается.
 
 Production checklist:
 
 - HTTPS обязателен для frontend и Keycloak.
 - `KC_HOSTNAME` должен совпадать с публичным Keycloak URL.
 - Redirect URIs, Web Origins и Post Logout Redirect URIs должны содержать только реальные production-домены.
+- Первый import realm должен выполняться уже с production URL, иначе localhost-настройки попадут в базу Keycloak и их придется править через Admin Console.
 - Self-registration в realm должна быть выключена.
 - Bootstrap admin password нельзя оставлять дефолтным.
 - Секреты должны жить вне git: env-файл, secret manager или protected CI variables.
