@@ -10,12 +10,13 @@ import (
 	"encoding/json"
 	"io"
 	"log/slog"
-	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/coreos/go-oidc/v3/oidc"
 )
 
 const (
@@ -179,25 +180,9 @@ func newTestAuthenticator(t *testing.T) testAuthenticator {
 		t.Fatalf("generate private key: %v", err)
 	}
 
-	jwksServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		respondJSON(w, http.StatusOK, jwksDocument{
-			Keys: []jwk{
-				{
-					KeyID:     testKeyID,
-					KeyType:   "RSA",
-					Algorithm: "RS256",
-					Use:       "sig",
-					Modulus:   base64.RawURLEncoding.EncodeToString(privateKey.PublicKey.N.Bytes()),
-					Exponent:  base64.RawURLEncoding.EncodeToString(big.NewInt(int64(privateKey.PublicKey.E)).Bytes()),
-				},
-			},
-		})
-	}))
-	t.Cleanup(jwksServer.Close)
-
 	authenticator, err := NewAuthenticator(AuthConfig{
 		Issuer:   testIssuer,
-		JWKSURL:  jwksServer.URL,
+		JWKSURL:  "https://keycloak.test/realms/pulse-check/protocol/openid-connect/certs",
 		Audience: testAudience,
 	})
 	if err != nil {
@@ -206,6 +191,15 @@ func newTestAuthenticator(t *testing.T) testAuthenticator {
 
 	now := time.Unix(1_700_000_000, 0)
 	authenticator.now = func() time.Time { return now }
+	authenticator.verifier = oidc.NewVerifier(
+		testIssuer,
+		&oidc.StaticKeySet{PublicKeys: []crypto.PublicKey{&privateKey.PublicKey}},
+		&oidc.Config{
+			SkipClientIDCheck:    true,
+			Now:                  authenticator.now,
+			SupportedSigningAlgs: []string{oidc.RS256},
+		},
+	)
 
 	return testAuthenticator{
 		authenticator: authenticator,
