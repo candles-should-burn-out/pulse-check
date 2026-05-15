@@ -2,6 +2,7 @@ package utils
 
 import (
 	"os"
+	"strconv"
 )
 
 func EnvString(name string, fallback string) string {
@@ -10,4 +11,18 @@ func EnvString(name string, fallback string) string {
 	}
 
 	return fallback
+}
+
+func EnvInt(name string, fallback int) int {
+	value := os.Getenv(name)
+	if value == "" {
+		return fallback
+	}
+
+	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		return fallback
+	}
+
+	return parsed
 }

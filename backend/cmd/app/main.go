@@ -21,11 +21,15 @@ func main() {
 		Addr:            utils.EnvString("HTTP_ADDR", ":8080"),
 		ServiceName:     utils.EnvString("OTEL_SERVICE_NAME", "pulse-check-backend"),
 		ShutdownTimeout: 10 * time.Second,
+		DatabaseURL:     utils.EnvString("DATABASE_URL", ""),
 		Auth: backend.AuthConfig{
 			Issuer:       utils.EnvString("OIDC_ISSUER", ""),
 			JWKSURL:      utils.EnvString("OIDC_JWKS_URL", ""),
 			Audience:     utils.EnvString("OIDC_AUDIENCE", ""),
 			RequiredRole: utils.EnvString("OIDC_REQUIRED_ROLE", ""),
+		},
+		StatusSet: backend.StatusSetConfig{
+			MaxStatuses: utils.EnvInt("STATUS_SET_MAX_STATUSES", backend.DefaultStatusLimit),
 		},
 	}
 
@@ -39,6 +43,22 @@ func main() {
 	}
 
 	app := backend.NewApp(logger, cfg.Auth)
+	if cfg.DatabaseURL != "" {
+		statusStore, err := backend.NewPostgresStatusStore(ctx, cfg.DatabaseURL, cfg.StatusSet.MaxStatuses, logger)
+		if err != nil {
+			logger.Error("init status store failed", slog.Any("error", err))
+			os.Exit(1)
+		}
+		defer func() {
+			if err := statusStore.Close(); err != nil {
+				logger.Error("status store close failed", slog.Any("error", err))
+			}
+		}()
+		app.SetStatusStore(statusStore)
+	} else {
+		logger.Warn("DATABASE_URL is empty; using in-memory status store")
+	}
+
 	server := &http.Server{
 		Addr:              cfg.Addr,
 		Handler:           app.Routes(),

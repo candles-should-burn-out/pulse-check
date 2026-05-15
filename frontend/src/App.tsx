@@ -1,10 +1,18 @@
 import { MouseEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined";
+import CheckIcon from "@mui/icons-material/Check";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
 import LogoutIcon from "@mui/icons-material/Logout";
+import PaletteOutlinedIcon from "@mui/icons-material/PaletteOutlined";
 import PersonIcon from "@mui/icons-material/Person";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
 import WbSunnyOutlinedIcon from "@mui/icons-material/WbSunnyOutlined";
 import {
   Alert,
@@ -27,11 +35,21 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
 
 import { Entity, fetchEntities } from "./api/entities";
+import {
+  StatusDefinition,
+  StatusInput,
+  StatusSet,
+  createStatus,
+  deleteStatus,
+  fetchStatusSet,
+  updateStatus,
+} from "./api/statuses";
 import { useAuth } from "./auth/useAuth";
 import { useThemeMode } from "./theme-mode-context";
 
@@ -45,6 +63,67 @@ const stateColor: Record<
   pending: "warning",
   disabled: "default",
 };
+
+const emptyStatusInput: StatusInput = {
+  name: "",
+  border_color: "#5e81ac",
+  background_color: "#eceff4",
+  text_color: "#2e3440",
+};
+
+const statusPalettes: Array<{
+  label: string;
+  colors: Pick<StatusInput, "border_color" | "background_color" | "text_color">;
+}> = [
+  {
+    label: "Синий",
+    colors: {
+      border_color: "#5e81ac",
+      background_color: "#e8f0fb",
+      text_color: "#24344d",
+    },
+  },
+  {
+    label: "Зеленый",
+    colors: {
+      border_color: "#4f8f5f",
+      background_color: "#e7f4ea",
+      text_color: "#1f3f29",
+    },
+  },
+  {
+    label: "Янтарный",
+    colors: {
+      border_color: "#c07b24",
+      background_color: "#fff2d8",
+      text_color: "#4b2d08",
+    },
+  },
+  {
+    label: "Красный",
+    colors: {
+      border_color: "#bf616a",
+      background_color: "#fae5e7",
+      text_color: "#4d2027",
+    },
+  },
+  {
+    label: "Фиолетовый",
+    colors: {
+      border_color: "#8d6cab",
+      background_color: "#f0e8f7",
+      text_color: "#392449",
+    },
+  },
+  {
+    label: "Серый",
+    colors: {
+      border_color: "#6b7280",
+      background_color: "#f3f4f6",
+      text_color: "#1f2937",
+    },
+  },
+];
 
 function ProtectedRoute() {
   const { status } = useAuth();
@@ -87,7 +166,12 @@ function isKnownAppRoute(pathname: string) {
   const normalizedPathname =
     pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
 
-  return normalizedPathname === "/" || normalizedPathname === "/profile";
+  return (
+    normalizedPathname === "/" ||
+    normalizedPathname === "/profile" ||
+    normalizedPathname === "/statuses" ||
+    normalizedPathname === "/statistics/statuses"
+  );
 }
 
 function LoginRedirect() {
@@ -168,6 +252,8 @@ function AuthenticatedApp() {
   const displayUserName = userName ?? "user";
   const isProfileMenuOpen = Boolean(profileAnchor);
   const isWorkspaceRoute = location.pathname === "/";
+  const isStatusesRoute = location.pathname === "/statuses";
+  const isStatusStatisticsRoute = location.pathname === "/statistics/statuses";
   const logoHref = isWorkspaceRoute ? "/" : ".";
   const isDarkTheme = mode === "dark";
 
@@ -214,6 +300,13 @@ function AuthenticatedApp() {
     setProfileAnchor(null);
     navigate("/profile");
   }, [navigate]);
+
+  const handleNavigate = useCallback(
+    (path: string) => {
+      navigate(path);
+    },
+    [navigate]
+  );
 
   const handleToggleTheme = useCallback(() => {
     toggleMode();
@@ -330,6 +423,38 @@ function AuthenticatedApp() {
               useFlexGap
               flexWrap="wrap"
             >
+              <Stack
+                direction="row"
+                spacing={0.5}
+                alignItems="center"
+                useFlexGap
+                flexWrap="wrap"
+              >
+                <Button
+                  size="small"
+                  variant={isWorkspaceRoute ? "contained" : "text"}
+                  startIcon={<FormatListBulletedOutlinedIcon />}
+                  onClick={() => handleNavigate("/")}
+                >
+                  Сущности
+                </Button>
+                <Button
+                  size="small"
+                  variant={isStatusesRoute ? "contained" : "text"}
+                  startIcon={<PaletteOutlinedIcon />}
+                  onClick={() => handleNavigate("/statuses")}
+                >
+                  Статусы
+                </Button>
+                <Button
+                  size="small"
+                  variant={isStatusStatisticsRoute ? "contained" : "text"}
+                  startIcon={<BarChartOutlinedIcon />}
+                  onClick={() => handleNavigate("/statistics/statuses")}
+                >
+                  Статистика
+                </Button>
+              </Stack>
               <Tooltip title="Профиль">
                 <IconButton
                   aria-label="Профиль"
@@ -419,6 +544,8 @@ function AuthenticatedApp() {
             }
           />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="statuses" element={<StatusesPage />} />
+          <Route path="statistics/statuses" element={<StatusStatisticsPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Container>
@@ -553,6 +680,497 @@ function EntitiesPage({
         )}
       </Paper>
     </Stack>
+  );
+}
+
+function StatusesPage() {
+  const { getAccessToken } = useAuth();
+  const [statusSet, setStatusSet] = useState<StatusSet | null>(null);
+  const [loadStatus, setLoadStatus] = useState<LoadState>("idle");
+  const [saveStatus, setSaveStatus] = useState<LoadState>("idle");
+  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState<StatusInput>(emptyStatusInput);
+  const [editingStatusID, setEditingStatusID] = useState<string | null>(null);
+
+  const isOwner = statusSet?.role === "status_owner";
+  const isEditing = editingStatusID !== null;
+  const statuses = statusSet?.statuses ?? [];
+
+  const loadStatusSet = useCallback(
+    async (signal?: AbortSignal) => {
+      setLoadStatus("loading");
+      setError(null);
+
+      try {
+        const accessToken = await getAccessToken();
+        const nextStatusSet = await fetchStatusSet(accessToken, signal);
+        setStatusSet(nextStatusSet);
+        setLoadStatus("success");
+      } catch (loadError) {
+        if (signal?.aborted) {
+          return;
+        }
+
+        setLoadStatus("error");
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Не удалось загрузить статусы"
+        );
+      }
+    },
+    [getAccessToken]
+  );
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void Promise.resolve().then(() => loadStatusSet(controller.signal));
+
+    return () => controller.abort();
+  }, [loadStatusSet]);
+
+  const resetForm = useCallback(() => {
+    setForm(emptyStatusInput);
+    setEditingStatusID(null);
+  }, []);
+
+  const handleEditStatus = useCallback((status: StatusDefinition) => {
+    setForm({
+      name: status.name,
+      border_color: status.border_color,
+      background_color: status.background_color,
+      text_color: status.text_color,
+    });
+    setEditingStatusID(status.id);
+  }, []);
+
+  const handleSaveStatus = useCallback(async () => {
+    setSaveStatus("loading");
+    setError(null);
+
+    try {
+      const accessToken = await getAccessToken();
+      const savedStatus = editingStatusID
+        ? await updateStatus(accessToken, editingStatusID, form)
+        : await createStatus(accessToken, form);
+
+      setStatusSet((current) => {
+        if (!current) {
+          return current;
+        }
+
+        const nextStatuses = editingStatusID
+          ? current.statuses.map((status) =>
+              status.id === savedStatus.id ? savedStatus : status
+            )
+          : [...current.statuses, savedStatus];
+
+        return { ...current, statuses: nextStatuses };
+      });
+      resetForm();
+      setSaveStatus("success");
+    } catch (saveError) {
+      setSaveStatus("error");
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Не удалось сохранить статус"
+      );
+    }
+  }, [editingStatusID, form, getAccessToken, resetForm]);
+
+  const handleDeleteStatus = useCallback(
+    async (status: StatusDefinition) => {
+      if (!window.confirm(`Удалить статус "${status.name}"?`)) {
+        return;
+      }
+
+      setSaveStatus("loading");
+      setError(null);
+
+      try {
+        const accessToken = await getAccessToken();
+        await deleteStatus(accessToken, status.id);
+        setStatusSet((current) =>
+          current
+            ? {
+                ...current,
+                statuses: current.statuses.filter((item) => item.id !== status.id),
+              }
+            : current
+        );
+        if (editingStatusID === status.id) {
+          resetForm();
+        }
+        setSaveStatus("success");
+      } catch (deleteError) {
+        setSaveStatus("error");
+        setError(
+          deleteError instanceof Error
+            ? deleteError.message
+            : "Не удалось удалить статус"
+        );
+      }
+    },
+    [editingStatusID, getAccessToken, resetForm]
+  );
+
+  return (
+    <Stack spacing={3}>
+      {error ? <Alert severity="error">{error}</Alert> : null}
+      {statusSet?.role === "assistant" ? (
+        <Alert severity="info">Набор статусов управляется владельцем.</Alert>
+      ) : null}
+
+      <Paper variant="outlined">
+        <Stack spacing={2.5} sx={{ p: 2.5 }}>
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            spacing={2}
+            alignItems={{ xs: "flex-start", md: "center" }}
+            justifyContent="space-between"
+          >
+            <Box>
+              <Typography component="h1" variant="h2">
+                Статусы
+              </Typography>
+              <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+                {statuses.length > 0
+                  ? `В наборе: ${statuses.length}`
+                  : "Набор пока пуст"}
+              </Typography>
+            </Box>
+            <Tooltip title="GET /status-set">
+              <span>
+                <Button
+                  variant="outlined"
+                  startIcon={
+                    loadStatus === "loading" ? (
+                      <CircularProgress color="inherit" size={18} />
+                    ) : (
+                      <RefreshIcon />
+                    )
+                  }
+                  onClick={() => void loadStatusSet()}
+                  disabled={loadStatus === "loading"}
+                >
+                  Обновить
+                </Button>
+              </span>
+            </Tooltip>
+          </Stack>
+
+          {isOwner ? (
+            <Box
+              component="form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void handleSaveStatus();
+              }}
+            >
+              <Stack spacing={2}>
+                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                  {statusPalettes.map((palette) => (
+                    <Tooltip title={palette.label} key={palette.label}>
+                      <Button
+                        type="button"
+                        variant="outlined"
+                        aria-label={palette.label}
+                        onClick={() =>
+                          setForm((current) => ({ ...current, ...palette.colors }))
+                        }
+                        sx={{
+                          minWidth: 44,
+                          width: 44,
+                          height: 40,
+                          p: 0,
+                          borderColor: palette.colors.border_color,
+                          bgcolor: palette.colors.background_color,
+                          color: palette.colors.text_color,
+                          "&:hover": {
+                            bgcolor: palette.colors.background_color,
+                            borderColor: palette.colors.border_color,
+                          },
+                        }}
+                      >
+                        <CheckIcon fontSize="small" />
+                      </Button>
+                    </Tooltip>
+                  ))}
+                </Stack>
+
+                <Stack
+                  direction={{ xs: "column", md: "row" }}
+                  spacing={1.5}
+                  alignItems={{ xs: "stretch", md: "center" }}
+                >
+                  <TextField
+                    label="Имя"
+                    value={form.name}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        name: event.target.value,
+                      }))
+                    }
+                    required
+                    fullWidth
+                    slotProps={{ htmlInput: { maxLength: 80 } }}
+                  />
+                  <TextField
+                    label="Контур"
+                    type="color"
+                    value={form.border_color}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        border_color: event.target.value,
+                      }))
+                    }
+                    sx={{ width: { xs: "100%", md: 116 } }}
+                  />
+                  <TextField
+                    label="Фон"
+                    type="color"
+                    value={form.background_color}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        background_color: event.target.value,
+                      }))
+                    }
+                    sx={{ width: { xs: "100%", md: 116 } }}
+                  />
+                  <TextField
+                    label="Текст"
+                    type="color"
+                    value={form.text_color}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        text_color: event.target.value,
+                      }))
+                    }
+                    sx={{ width: { xs: "100%", md: 116 } }}
+                  />
+                  <StatusPreview status={{ ...form, id: "preview" }} />
+                </Stack>
+
+                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    startIcon={
+                      saveStatus === "loading" ? (
+                        <CircularProgress color="inherit" size={18} />
+                      ) : isEditing ? (
+                        <SaveOutlinedIcon />
+                      ) : (
+                        <AddCircleOutlineIcon />
+                      )
+                    }
+                    disabled={saveStatus === "loading"}
+                  >
+                    {isEditing ? "Сохранить" : "Создать"}
+                  </Button>
+                  {isEditing ? (
+                    <Button type="button" variant="text" onClick={resetForm}>
+                      Отменить
+                    </Button>
+                  ) : null}
+                </Stack>
+              </Stack>
+            </Box>
+          ) : null}
+        </Stack>
+
+        <Divider />
+
+        {statuses.length > 0 ? (
+          <TableContainer>
+            <Table sx={{ minWidth: 700 }} aria-label="Список статусов">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Статус</TableCell>
+                  <TableCell>ID</TableCell>
+                  {isOwner ? <TableCell width={120}>Действия</TableCell> : null}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {statuses.map((status) => (
+                  <TableRow key={status.id} hover>
+                    <TableCell>
+                      <StatusPreview status={status} />
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        fontFamily:
+                          'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", monospace',
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {status.id}
+                    </TableCell>
+                    {isOwner ? (
+                      <TableCell>
+                        <Stack direction="row" spacing={0.5}>
+                          <Tooltip title="Редактировать">
+                            <IconButton
+                              aria-label="Редактировать"
+                              onClick={() => handleEditStatus(status)}
+                              size="small"
+                            >
+                              <EditOutlinedIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Удалить">
+                            <IconButton
+                              aria-label="Удалить"
+                              onClick={() => void handleDeleteStatus(status)}
+                              size="small"
+                            >
+                              <DeleteOutlineIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
+                      </TableCell>
+                    ) : null}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        ) : (
+          <Box sx={{ p: 4, color: "text.secondary" }}>
+            <Typography>
+              {loadStatus === "loading" ? "Загружаем статусы" : "Статусов пока нет"}
+            </Typography>
+          </Box>
+        )}
+      </Paper>
+    </Stack>
+  );
+}
+
+function StatusStatisticsPage() {
+  const { getAccessToken } = useAuth();
+  const [statusSet, setStatusSet] = useState<StatusSet | null>(null);
+  const [loadStatus, setLoadStatus] = useState<LoadState>("idle");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function load() {
+      setLoadStatus("loading");
+      setError(null);
+
+      try {
+        const accessToken = await getAccessToken();
+        setStatusSet(await fetchStatusSet(accessToken, controller.signal));
+        setLoadStatus("success");
+      } catch (loadError) {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        setLoadStatus("error");
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Не удалось загрузить статусы"
+        );
+      }
+    }
+
+    void load();
+
+    return () => controller.abort();
+  }, [getAccessToken]);
+
+  const statuses = statusSet?.statuses ?? [];
+
+  return (
+    <Stack spacing={3}>
+      {error ? <Alert severity="error">{error}</Alert> : null}
+
+      <Paper variant="outlined">
+        <Stack spacing={2.5} sx={{ p: 2.5 }}>
+          <Box>
+            <Typography component="h1" variant="h2">
+              Статистика по статусам
+            </Typography>
+            <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+              {statuses.length > 0
+                ? `Измерений: ${statuses.length}`
+                : "Измерения пока не настроены"}
+            </Typography>
+          </Box>
+        </Stack>
+        <Divider />
+
+        {statuses.length > 0 ? (
+          <TableContainer>
+            <Table sx={{ minWidth: 560 }} aria-label="Статусы для статистики">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Статус</TableCell>
+                  <TableCell width={180}>Роль</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {statuses.map((status) => (
+                  <TableRow key={status.id} hover>
+                    <TableCell>
+                      <StatusPreview status={status} />
+                    </TableCell>
+                    <TableCell>
+                      {statusSet?.role === "assistant" ? "Помощник" : "Владелец"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        ) : (
+          <Box sx={{ p: 4, color: "text.secondary" }}>
+            <Typography>
+              {loadStatus === "loading"
+                ? "Загружаем статусы"
+                : "Агрегаты по статусам пока пусты"}
+            </Typography>
+          </Box>
+        )}
+      </Paper>
+    </Stack>
+  );
+}
+
+function StatusPreview({
+  status,
+}: {
+  status:
+    | StatusDefinition
+    | (StatusInput & {
+        id: string;
+      });
+}) {
+  return (
+    <Chip
+      label={status.name || "Новый статус"}
+      variant="outlined"
+      sx={{
+        maxWidth: "100%",
+        bgcolor: status.background_color,
+        borderColor: status.border_color,
+        color: status.text_color,
+        fontWeight: 700,
+        "& .MuiChip-label": {
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        },
+      }}
+    />
   );
 }
 

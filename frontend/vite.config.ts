@@ -96,6 +96,8 @@ function isKnownAppPath(pathname: string) {
   return (
     normalizedPathname === "/app" ||
     normalizedPathname === "/app/login" ||
-    normalizedPathname === "/app/profile"
+    normalizedPathname === "/app/profile" ||
+    normalizedPathname === "/app/statuses" ||
+    normalizedPathname === "/app/statistics/statuses"
   );
 }

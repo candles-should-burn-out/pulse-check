@@ -7,6 +7,8 @@ type Config struct {
 	ServiceName     string
 	ShutdownTimeout time.Duration
 	Auth            AuthConfig
+	DatabaseURL     string
+	StatusSet       StatusSetConfig
 }
 
 type AuthConfig struct {
@@ -14,4 +16,8 @@ type AuthConfig struct {
 	JWKSURL      string
 	Audience     string
 	RequiredRole string
+}
+
+type StatusSetConfig struct {
+	MaxStatuses int
 }
