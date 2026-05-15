@@ -19,6 +19,7 @@ const (
 	StatusRoleOwner     = "status_owner"
 	StatusRoleAssistant = "assistant"
 	DefaultStatusLimit  = 50
+	StatusNameMaxLength = 40
 )
 
 var (
@@ -72,7 +73,7 @@ func validateStatusInput(input StatusInput) (StatusInput, error) {
 	if input.Name == "" {
 		return input, fmt.Errorf("%w: name_required", ErrInvalidStatus)
 	}
-	if len([]rune(input.Name)) > 80 {
+	if len([]rune(input.Name)) > StatusNameMaxLength {
 		return input, fmt.Errorf("%w: name_too_long", ErrInvalidStatus)
 	}
 	if !hexColorPattern.MatchString(input.BorderColor) {
@@ -531,7 +532,7 @@ func (s *PostgresStatusStore) initSchema(ctx context.Context) error {
 		CREATE TABLE IF NOT EXISTS statuses (
 			id UUID PRIMARY KEY,
 			status_set_id UUID NOT NULL REFERENCES status_sets(id) ON DELETE CASCADE,
-			name TEXT NOT NULL,
+			name TEXT NOT NULL CHECK (char_length(name) <= 40),
 			border_color CHAR(7) NOT NULL CHECK (border_color ~ '^#[0-9A-Fa-f]{6}$'),
 			background_color CHAR(7) NOT NULL CHECK (background_color ~ '^#[0-9A-Fa-f]{6}$'),
 			text_color CHAR(7) NOT NULL CHECK (text_color ~ '^#[0-9A-Fa-f]{6}$'),
@@ -541,6 +542,19 @@ func (s *PostgresStatusStore) initSchema(ctx context.Context) error {
 
 		CREATE INDEX IF NOT EXISTS statuses_status_set_id_idx
 			ON statuses(status_set_id);
+
+		DO $$
+		BEGIN
+			IF NOT EXISTS (
+				SELECT 1
+				FROM pg_constraint
+				WHERE conname = 'statuses_name_length_check'
+					AND conrelid = 'statuses'::regclass
+			) THEN
+				ALTER TABLE statuses
+					ADD CONSTRAINT statuses_name_length_check CHECK (char_length(name) <= 40) NOT VALID;
+			END IF;
+		END $$;
 	`)
 
 	return err

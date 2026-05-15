@@ -3,10 +3,8 @@ import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined";
-import CheckIcon from "@mui/icons-material/Check";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import FormatListBulletedOutlinedIcon from "@mui/icons-material/FormatListBulletedOutlined";
 import LogoutIcon from "@mui/icons-material/Logout";
 import PaletteOutlinedIcon from "@mui/icons-material/PaletteOutlined";
@@ -22,6 +20,10 @@ import {
   Chip,
   CircularProgress,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
   IconButton,
   Link,
@@ -42,6 +44,7 @@ import {
 
 import { Entity, fetchEntities } from "./api/entities";
 import {
+  STATUS_NAME_MAX_LENGTH,
   StatusDefinition,
   StatusInput,
   StatusSet,
@@ -69,6 +72,13 @@ const emptyStatusInput: StatusInput = {
   border_color: "#5e81ac",
   background_color: "#eceff4",
   text_color: "#2e3440",
+};
+
+const createStatusInput: StatusInput = {
+  name: "+ создать новый",
+  border_color: "#9ca3af",
+  background_color: "#f3f4f6",
+  text_color: "#4b5563",
 };
 
 const statusPalettes: Array<{
@@ -691,10 +701,12 @@ function StatusesPage() {
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<StatusInput>(emptyStatusInput);
   const [editingStatusID, setEditingStatusID] = useState<string | null>(null);
+  const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
 
   const isOwner = statusSet?.role === "status_owner";
   const isEditing = editingStatusID !== null;
   const statuses = statusSet?.statuses ?? [];
+  const editingStatus = statuses.find((status) => status.id === editingStatusID);
 
   const loadStatusSet = useCallback(
     async (signal?: AbortSignal) => {
@@ -734,6 +746,17 @@ function StatusesPage() {
     setEditingStatusID(null);
   }, []);
 
+  const closeStatusDialog = useCallback(() => {
+    setIsStatusDialogOpen(false);
+    resetForm();
+  }, [resetForm]);
+
+  const handleCreateStatus = useCallback(() => {
+    resetForm();
+    setError(null);
+    setIsStatusDialogOpen(true);
+  }, [resetForm]);
+
   const handleEditStatus = useCallback((status: StatusDefinition) => {
     setForm({
       name: status.name,
@@ -742,17 +765,32 @@ function StatusesPage() {
       text_color: status.text_color,
     });
     setEditingStatusID(status.id);
+    setError(null);
+    setIsStatusDialogOpen(true);
   }, []);
 
   const handleSaveStatus = useCallback(async () => {
+    const normalizedForm = {
+      ...form,
+      name: form.name.trim(),
+    };
+
+    if (Array.from(normalizedForm.name).length > STATUS_NAME_MAX_LENGTH) {
+      setSaveStatus("error");
+      setError(
+        `Имя статуса должно быть не длиннее ${STATUS_NAME_MAX_LENGTH} символов`
+      );
+      return;
+    }
+
     setSaveStatus("loading");
     setError(null);
 
     try {
       const accessToken = await getAccessToken();
       const savedStatus = editingStatusID
-        ? await updateStatus(accessToken, editingStatusID, form)
-        : await createStatus(accessToken, form);
+        ? await updateStatus(accessToken, editingStatusID, normalizedForm)
+        : await createStatus(accessToken, normalizedForm);
 
       setStatusSet((current) => {
         if (!current) {
@@ -767,7 +805,7 @@ function StatusesPage() {
 
         return { ...current, statuses: nextStatuses };
       });
-      resetForm();
+      closeStatusDialog();
       setSaveStatus("success");
     } catch (saveError) {
       setSaveStatus("error");
@@ -777,7 +815,7 @@ function StatusesPage() {
           : "Не удалось сохранить статус"
       );
     }
-  }, [editingStatusID, form, getAccessToken, resetForm]);
+  }, [closeStatusDialog, editingStatusID, form, getAccessToken]);
 
   const handleDeleteStatus = useCallback(
     async (status: StatusDefinition) => {
@@ -800,7 +838,7 @@ function StatusesPage() {
             : current
         );
         if (editingStatusID === status.id) {
-          resetForm();
+          closeStatusDialog();
         }
         setSaveStatus("success");
       } catch (deleteError) {
@@ -812,7 +850,7 @@ function StatusesPage() {
         );
       }
     },
-    [editingStatusID, getAccessToken, resetForm]
+    [closeStatusDialog, editingStatusID, getAccessToken]
   );
 
   return (
@@ -824,230 +862,240 @@ function StatusesPage() {
 
       <Paper variant="outlined">
         <Stack spacing={2.5} sx={{ p: 2.5 }}>
-          <Stack
-            direction={{ xs: "column", md: "row" }}
-            spacing={2}
-            alignItems={{ xs: "flex-start", md: "center" }}
-            justifyContent="space-between"
-          >
-            <Box>
-              <Typography component="h1" variant="h2">
-                Статусы
-              </Typography>
-              <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-                {statuses.length > 0
-                  ? `В наборе: ${statuses.length}`
-                  : "Набор пока пуст"}
-              </Typography>
-            </Box>
-            <Tooltip title="GET /status-set">
-              <span>
-                <Button
-                  variant="outlined"
-                  startIcon={
-                    loadStatus === "loading" ? (
-                      <CircularProgress color="inherit" size={18} />
-                    ) : (
-                      <RefreshIcon />
-                    )
-                  }
-                  onClick={() => void loadStatusSet()}
-                  disabled={loadStatus === "loading"}
-                >
-                  Обновить
-                </Button>
-              </span>
-            </Tooltip>
-          </Stack>
-
-          {isOwner ? (
-            <Box
-              component="form"
-              onSubmit={(event) => {
-                event.preventDefault();
-                void handleSaveStatus();
-              }}
-            >
-              <Stack spacing={2}>
-                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-                  {statusPalettes.map((palette) => (
-                    <Tooltip title={palette.label} key={palette.label}>
-                      <Button
-                        type="button"
-                        variant="outlined"
-                        aria-label={palette.label}
-                        onClick={() =>
-                          setForm((current) => ({ ...current, ...palette.colors }))
-                        }
-                        sx={{
-                          minWidth: 44,
-                          width: 44,
-                          height: 40,
-                          p: 0,
-                          borderColor: palette.colors.border_color,
-                          bgcolor: palette.colors.background_color,
-                          color: palette.colors.text_color,
-                          "&:hover": {
-                            bgcolor: palette.colors.background_color,
-                            borderColor: palette.colors.border_color,
-                          },
-                        }}
-                      >
-                        <CheckIcon fontSize="small" />
-                      </Button>
-                    </Tooltip>
-                  ))}
-                </Stack>
-
-                <Stack
-                  direction={{ xs: "column", md: "row" }}
-                  spacing={1.5}
-                  alignItems={{ xs: "stretch", md: "center" }}
-                >
-                  <TextField
-                    label="Имя"
-                    value={form.name}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        name: event.target.value,
-                      }))
-                    }
-                    required
-                    fullWidth
-                    slotProps={{ htmlInput: { maxLength: 80 } }}
-                  />
-                  <TextField
-                    label="Контур"
-                    type="color"
-                    value={form.border_color}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        border_color: event.target.value,
-                      }))
-                    }
-                    sx={{ width: { xs: "100%", md: 116 } }}
-                  />
-                  <TextField
-                    label="Фон"
-                    type="color"
-                    value={form.background_color}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        background_color: event.target.value,
-                      }))
-                    }
-                    sx={{ width: { xs: "100%", md: 116 } }}
-                  />
-                  <TextField
-                    label="Текст"
-                    type="color"
-                    value={form.text_color}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        text_color: event.target.value,
-                      }))
-                    }
-                    sx={{ width: { xs: "100%", md: 116 } }}
-                  />
-                  <StatusPreview status={{ ...form, id: "preview" }} />
-                </Stack>
-
-                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    startIcon={
-                      saveStatus === "loading" ? (
-                        <CircularProgress color="inherit" size={18} />
-                      ) : isEditing ? (
-                        <SaveOutlinedIcon />
-                      ) : (
-                        <AddCircleOutlineIcon />
-                      )
-                    }
-                    disabled={saveStatus === "loading"}
-                  >
-                    {isEditing ? "Сохранить" : "Создать"}
-                  </Button>
-                  {isEditing ? (
-                    <Button type="button" variant="text" onClick={resetForm}>
-                      Отменить
-                    </Button>
-                  ) : null}
-                </Stack>
-              </Stack>
-            </Box>
-          ) : null}
+          <Typography component="h1" variant="h2">
+            Статусы
+          </Typography>
         </Stack>
 
         <Divider />
 
-        {statuses.length > 0 ? (
-          <TableContainer>
-            <Table sx={{ minWidth: 700 }} aria-label="Список статусов">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Статус</TableCell>
-                  <TableCell>ID</TableCell>
-                  {isOwner ? <TableCell width={120}>Действия</TableCell> : null}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {statuses.map((status) => (
-                  <TableRow key={status.id} hover>
-                    <TableCell>
-                      <StatusPreview status={status} />
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        fontFamily:
-                          'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", monospace',
-                        wordBreak: "break-word",
-                      }}
-                    >
-                      {status.id}
-                    </TableCell>
-                    {isOwner ? (
-                      <TableCell>
-                        <Stack direction="row" spacing={0.5}>
-                          <Tooltip title="Редактировать">
-                            <IconButton
-                              aria-label="Редактировать"
-                              onClick={() => handleEditStatus(status)}
-                              size="small"
-                            >
-                              <EditOutlinedIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Удалить">
-                            <IconButton
-                              aria-label="Удалить"
-                              onClick={() => void handleDeleteStatus(status)}
-                              size="small"
-                            >
-                              <DeleteOutlineIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </Stack>
-                      </TableCell>
-                    ) : null}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        ) : (
-          <Box sx={{ p: 4, color: "text.secondary" }}>
-            <Typography>
+        <Box sx={{ p: 2.5 }}>
+          {statuses.length > 0 || isOwner ? (
+            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+              {statuses.map((status) =>
+                isOwner ? (
+                  <Button
+                    key={status.id}
+                    type="button"
+                    variant="text"
+                    onClick={() => handleEditStatus(status)}
+                    sx={{
+                      minWidth: 0,
+                      p: 0,
+                      borderRadius: 5,
+                      textTransform: "none",
+                    }}
+                  >
+                    <StatusPreview status={status} />
+                  </Button>
+                ) : (
+                  <StatusPreview key={status.id} status={status} />
+                )
+              )}
+              {isOwner ? (
+                <Button
+                  type="button"
+                  variant="text"
+                  onClick={handleCreateStatus}
+                  sx={{
+                    minWidth: 0,
+                    p: 0,
+                    borderRadius: 5,
+                    textTransform: "none",
+                  }}
+                >
+                  <StatusPreview status={{ ...createStatusInput, id: "create" }} />
+                </Button>
+              ) : null}
+            </Stack>
+          ) : (
+            <Typography color="text.secondary">
               {loadStatus === "loading" ? "Загружаем статусы" : "Статусов пока нет"}
             </Typography>
-          </Box>
-        )}
+          )}
+        </Box>
       </Paper>
+
+      <Dialog
+        open={isStatusDialogOpen}
+        onClose={saveStatus === "loading" ? undefined : closeStatusDialog}
+        fullWidth
+        maxWidth="xs"
+      >
+        <Box
+          component="form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void handleSaveStatus();
+          }}
+        >
+          <DialogTitle>
+            {isEditing ? "Редактирование статуса" : "Новый статус"}
+          </DialogTitle>
+          <DialogContent>
+            <Stack spacing={2} sx={{ pt: 0.5 }}>
+              <Box>
+                <StatusPreview status={{ ...form, id: "preview" }} />
+              </Box>
+
+              <TextField
+                label="Имя"
+                value={form.name}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    name: event.target.value,
+                  }))
+                }
+                required
+                fullWidth
+                slotProps={{ htmlInput: { maxLength: STATUS_NAME_MAX_LENGTH } }}
+                helperText={`${Array.from(form.name).length}/${STATUS_NAME_MAX_LENGTH}`}
+              />
+
+              <Stack
+                direction="row"
+                spacing={2}
+                alignItems="center"
+                useFlexGap
+                flexWrap="wrap"
+              >
+                <StatusColorPicker
+                  label="Контур"
+                  color={form.border_color}
+                  onChange={(borderColor) =>
+                    setForm((current) => ({
+                      ...current,
+                      border_color: borderColor,
+                    }))
+                  }
+                />
+                <StatusColorPicker
+                  label="Фон"
+                  color={form.background_color}
+                  onChange={(backgroundColor) =>
+                    setForm((current) => ({
+                      ...current,
+                      background_color: backgroundColor,
+                    }))
+                  }
+                />
+                <StatusColorPicker
+                  label="Текст"
+                  color={form.text_color}
+                  onChange={(textColor) =>
+                    setForm((current) => ({
+                      ...current,
+                      text_color: textColor,
+                    }))
+                  }
+                />
+              </Stack>
+
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 1,
+                  flexWrap: "wrap",
+                }}
+              >
+                {statusPalettes.map((palette) => (
+                  <Tooltip title={palette.label} key={palette.label}>
+                    <Box
+                      component="button"
+                      type="button"
+                      aria-label={palette.label}
+                      onClick={() =>
+                        setForm((current) => ({ ...current, ...palette.colors }))
+                      }
+                      sx={{
+                        alignItems: "center",
+                        appearance: "none",
+                        aspectRatio: "1 / 1",
+                        display: "inline-flex",
+                        justifyContent: "center",
+                        flex: "0 0 40px",
+                        width: 40,
+                        p: 0,
+                        border: 1,
+                        borderRadius: "50%",
+                        bgcolor: palette.colors.background_color,
+                        borderColor:
+                          form.border_color === palette.colors.border_color &&
+                          form.background_color === palette.colors.background_color &&
+                          form.text_color === palette.colors.text_color
+                            ? palette.colors.border_color
+                            : "divider",
+                        boxShadow:
+                          form.border_color === palette.colors.border_color &&
+                          form.background_color === palette.colors.background_color &&
+                          form.text_color === palette.colors.text_color
+                            ? `0 0 0 2px ${palette.colors.border_color}`
+                            : "none",
+                        cursor: "pointer",
+                        "&:hover": {
+                          bgcolor: palette.colors.background_color,
+                          borderColor: palette.colors.border_color,
+                        },
+                      }}
+                    >
+                      <Typography
+                        component="span"
+                        sx={{
+                          color: palette.colors.text_color,
+                          fontSize: 15,
+                          fontWeight: 800,
+                          lineHeight: 1,
+                        }}
+                      >
+                        A
+                      </Typography>
+                    </Box>
+                  </Tooltip>
+                ))}
+              </Box>
+            </Stack>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2.5 }}>
+            {isEditing && editingStatus ? (
+              <Button
+                type="button"
+                color="error"
+                startIcon={<DeleteOutlineIcon />}
+                onClick={() => void handleDeleteStatus(editingStatus)}
+                disabled={saveStatus === "loading"}
+                sx={{ mr: "auto" }}
+              >
+                Удалить
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              variant="text"
+              onClick={closeStatusDialog}
+              disabled={saveStatus === "loading"}
+            >
+              Отменить
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              startIcon={
+                saveStatus === "loading" ? (
+                  <CircularProgress color="inherit" size={18} />
+                ) : isEditing ? (
+                  <SaveOutlinedIcon />
+                ) : (
+                  <AddCircleOutlineIcon />
+                )
+              }
+              disabled={saveStatus === "loading"}
+            >
+              {isEditing ? "Сохранить" : "Создать"}
+            </Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
     </Stack>
   );
 }
@@ -1142,6 +1190,60 @@ function StatusStatisticsPage() {
           </Box>
         )}
       </Paper>
+    </Stack>
+  );
+}
+
+function StatusColorPicker({
+  label,
+  color,
+  onChange,
+}: {
+  label: string;
+  color: string;
+  onChange: (color: string) => void;
+}) {
+  return (
+    <Stack
+      direction="row"
+      spacing={0.75}
+      alignItems="center"
+    >
+      <Typography color="text.secondary" variant="body2">
+        {label}:
+      </Typography>
+      <Tooltip title={`Выбрать ${label.toLowerCase()}`}>
+        <Box
+          component="input"
+          type="color"
+          aria-label={label}
+          value={color}
+          onChange={(event) => onChange(event.target.value)}
+          sx={{
+            width: 28,
+            height: 28,
+            p: 0,
+            border: 0,
+            borderRadius: "50%",
+            bgcolor: "transparent",
+            cursor: "pointer",
+            overflow: "hidden",
+            "&::-webkit-color-swatch-wrapper": {
+              p: 0,
+            },
+            "&::-webkit-color-swatch": {
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: "50%",
+            },
+            "&::-moz-color-swatch": {
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: "50%",
+            },
+          }}
+        />
+      </Tooltip>
     </Stack>
   );
 }

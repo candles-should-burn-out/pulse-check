@@ -1,5 +1,7 @@
 export type StatusRole = "status_owner" | "assistant";
 
+export const STATUS_NAME_MAX_LENGTH = 40;
+
 export type StatusDefinition = {
   id: string;
   name: string;

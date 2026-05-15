@@ -85,6 +85,31 @@ func TestStatusLimitReturnsConflict(t *testing.T) {
 	}
 }
 
+func TestStatusNameMaxLength(t *testing.T) {
+	app := NewApp(slog.New(slog.NewTextHandler(io.Discard, nil)))
+	handler := app.Routes()
+
+	requestStatus(t, handler, http.MethodPost, "/statuses", StatusInput{
+		Name:            "1234567890123456789012345678901234567890",
+		BorderColor:     "#5e81ac",
+		BackgroundColor: "#e8f0fb",
+		TextColor:       "#24344d",
+	}, http.StatusCreated)
+
+	recorder := requestJSON(t, handler, http.MethodPost, "/statuses", StatusInput{
+		Name:            "12345678901234567890123456789012345678901",
+		BorderColor:     "#5e81ac",
+		BackgroundColor: "#e8f0fb",
+		TextColor:       "#24344d",
+	})
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusBadRequest)
+	}
+	if !bytes.Contains(recorder.Body.Bytes(), []byte("invalid_status")) {
+		t.Fatalf("body = %q, want invalid_status", recorder.Body.String())
+	}
+}
+
 func TestAssistantCannotModifyStatuses(t *testing.T) {
 	store := NewMemoryStatusStore(DefaultStatusLimit).(*memoryStatusStore)
 	ownerSet, err := store.GetStatusSet(context.Background(), "owner")
