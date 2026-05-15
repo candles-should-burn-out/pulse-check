@@ -1,0 +1,3 @@
+Но важный нюанс: если этот же keycloak/pulse-check-realm.json когда-нибудь использовать для production-импорта, тогда sslRequired: "none" будет слишком мягкой настройкой. Перед production лучше сделать отдельный realm export/seed или production override, где будет HTTPS-режим и реальные redirect URI вроде https://your-domain/app/*.
+
+Хороший будущий шаг: разделить keycloak/pulse-check-realm.local.json и production seed/config, чтобы локальная удобная настройка не могла случайно уехать в боевое окружение.
