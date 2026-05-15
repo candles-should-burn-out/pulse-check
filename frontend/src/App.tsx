@@ -1,9 +1,11 @@
 import { MouseEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import LogoutIcon from "@mui/icons-material/Logout";
 import PersonIcon from "@mui/icons-material/Person";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import WbSunnyOutlinedIcon from "@mui/icons-material/WbSunnyOutlined";
 import {
   Alert,
   Avatar,
@@ -31,6 +33,7 @@ import {
 
 import { Entity, fetchEntities } from "./api/entities";
 import { useAuth } from "./auth/useAuth";
+import { useThemeMode } from "./theme-mode-context";
 
 type LoadState = "idle" | "loading" | "success" | "error";
 
@@ -152,6 +155,7 @@ function isBackForwardNavigation() {
 
 function AuthenticatedApp() {
   const { getAccessToken, logout, userName } = useAuth();
+  const { mode, toggleMode } = useThemeMode();
   const [entities, setEntities] = useState<Entity[]>([]);
   const [status, setStatus] = useState<LoadState>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -165,6 +169,7 @@ function AuthenticatedApp() {
   const isProfileMenuOpen = Boolean(profileAnchor);
   const isWorkspaceRoute = location.pathname === "/";
   const logoHref = isWorkspaceRoute ? "/" : ".";
+  const isDarkTheme = mode === "dark";
 
   const stateSummary = useMemo(() => {
     return entities.reduce<Record<string, number>>((acc, entity) => {
@@ -210,6 +215,11 @@ function AuthenticatedApp() {
     navigate("/profile");
   }, [navigate]);
 
+  const handleToggleTheme = useCallback(() => {
+    toggleMode();
+    setProfileAnchor(null);
+  }, [toggleMode]);
+
   const handleLogoClick = useCallback(
     (event: MouseEvent<HTMLAnchorElement>) => {
       if (isWorkspaceRoute) {
@@ -234,7 +244,10 @@ function AuthenticatedApp() {
         sx={{
           borderBottom: 1,
           borderColor: "divider",
-          bgcolor: "rgba(255, 255, 255, 0.82)",
+          bgcolor: (theme) =>
+            theme.palette.mode === "dark"
+              ? "rgba(46, 52, 64, 0.88)"
+              : "rgba(236, 239, 244, 0.84)",
           backdropFilter: "blur(16px)",
         }}
       >
@@ -269,7 +282,10 @@ function AuthenticatedApp() {
                   width: 36,
                   height: 36,
                   border: 1,
-                  borderColor: "rgba(35, 92, 99, 0.24)",
+                  borderColor: (theme) =>
+                    theme.palette.mode === "dark"
+                      ? "rgba(136, 192, 208, 0.32)"
+                      : "rgba(94, 129, 172, 0.28)",
                   borderRadius: 1,
                   display: "grid",
                   placeItems: "center",
@@ -358,6 +374,23 @@ function AuthenticatedApp() {
                   >
                     {displayUserName}
                   </Typography>
+                </MenuItem>
+                <Divider />
+                <MenuItem onClick={handleToggleTheme}>
+                  {isDarkTheme ? (
+                    <WbSunnyOutlinedIcon
+                      color="action"
+                      fontSize="small"
+                      sx={{ mr: 1.25 }}
+                    />
+                  ) : (
+                    <DarkModeOutlinedIcon
+                      color="action"
+                      fontSize="small"
+                      sx={{ mr: 1.25 }}
+                    />
+                  )}
+                  {isDarkTheme ? "Светлая тема" : "Темная тема"}
                 </MenuItem>
                 <Divider />
                 <MenuItem onClick={handleLogout}>
@@ -618,7 +651,7 @@ function NotFoundPanel({
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(135deg, rgba(35, 92, 99, 0.08), rgba(138, 79, 61, 0.06))",
+              "linear-gradient(135deg, rgba(136, 192, 208, 0.16), rgba(180, 142, 173, 0.14))",
           }}
         />
         <Stack

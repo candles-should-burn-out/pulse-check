@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Вход в Pulse Check</title>
+    <script src="${url.resourcesPath}/js/theme-mode.js"></script>
     <link rel="stylesheet" href="${url.resourcesPath}/css/login.css" />
   </head>
   <body>
@@ -24,6 +25,35 @@
             </span>
             <span>Pulse Check</span>
           </a>
+          <button
+            class="theme-toggle"
+            type="button"
+            aria-label="Переключить тему"
+            aria-pressed="false"
+            title="Переключить тему"
+          >
+            <span class="theme-toggle__icon theme-toggle__icon--sun" aria-hidden="true">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2" />
+                <path
+                  d="M12 2v2m0 16v2M4 12H2m20 0h-2M5 5l1.4 1.4M17.6 17.6 19 19M19 5l-1.4 1.4M6.4 17.6 5 19"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </span>
+            <span class="theme-toggle__icon theme-toggle__icon--moon" aria-hidden="true">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M20.4 15.2A8.2 8.2 0 0 1 8.8 3.6 8.4 8.4 0 1 0 20.4 15.2Z"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </span>
+          </button>
         </div>
       </header>
 

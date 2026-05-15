@@ -8,24 +8,94 @@
       name="description"
       content="Pulse Check помогает собирать неперсонализированную статистику: заметки остаются у пользователя, сервер считает только агрегированные показатели."
     />
+    <script>
+      (() => {
+        const storageKey = "pulse-check-theme-mode";
+        const isThemeMode = (mode) => mode === "dark" || mode === "light";
+        const cookie = document.cookie
+          .split("; ")
+          .find((entry) => entry.startsWith(`${storageKey}=`));
+        const cookieMode = cookie?.split("=")[1] ?? null;
+
+        try {
+          const mode = isThemeMode(cookieMode)
+            ? cookieMode
+            : localStorage.getItem(storageKey);
+
+          if (isThemeMode(mode)) {
+            document.documentElement.dataset.theme = mode;
+            document.documentElement.style.colorScheme = mode;
+          }
+        } catch {
+          document.documentElement.dataset.theme = "light";
+        }
+      })();
+    </script>
     <style>
       :root {
-        color: #172422;
-        background: #f6f7f4;
+        color: #2e3440;
+        background: #eceff4;
         font-family:
           Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
           "Segoe UI", sans-serif;
         font-synthesis: none;
         text-rendering: optimizeLegibility;
         -webkit-font-smoothing: antialiased;
-        --ink: #172422;
-        --muted: #5c6966;
-        --line: #d9dfd8;
+        --ink: #2e3440;
+        --muted: #4c566a;
+        --line: #d8dee9;
         --paper: #ffffff;
-        --primary: #235c63;
-        --secondary: #8a4f3d;
-        --accent: #39705f;
-        --soft: #e9efea;
+        --primary: #5e81ac;
+        --primary-contrast: #eceff4;
+        --secondary: #b48ead;
+        --accent: #88c0d0;
+        --soft: #e5e9f0;
+        --page-bg: #eceff4;
+        --page-wash: rgba(236, 239, 244, 0.86);
+        --topbar-bg: rgba(236, 239, 244, 0.84);
+        --mark-bg: #ffffff;
+        --button-hover: #4c6f9d;
+        --ghost-hover: #ffffff;
+        --ghost-border-hover: #c7d0dc;
+        --card-bg: #ffffff;
+        --card-bg-translucent: rgba(255, 255, 255, 0.74);
+        --shadow: rgba(46, 52, 64, 0.10);
+        --theme-toggle-bg: #ffffff;
+        --theme-toggle-active-bg: #e5e9f0;
+        --theme-toggle-active-color: #5e81ac;
+        --frost-wash: rgba(136, 192, 208, 0.18);
+        --aurora-wash: rgba(180, 142, 173, 0.14);
+        color-scheme: light;
+      }
+
+      :root[data-theme="dark"] {
+        color: #eceff4;
+        background: #2e3440;
+        --ink: #eceff4;
+        --muted: #d8dee9;
+        --line: rgba(216, 222, 233, 0.18);
+        --paper: #3b4252;
+        --primary: #88c0d0;
+        --primary-contrast: #2e3440;
+        --secondary: #b48ead;
+        --accent: #8fbcbb;
+        --soft: #434c5e;
+        --page-bg: #2e3440;
+        --page-wash: rgba(46, 52, 64, 0.88);
+        --topbar-bg: rgba(46, 52, 64, 0.88);
+        --mark-bg: #3b4252;
+        --button-hover: #9bd1dd;
+        --ghost-hover: #3b4252;
+        --ghost-border-hover: rgba(216, 222, 233, 0.34);
+        --card-bg: #3b4252;
+        --card-bg-translucent: rgba(59, 66, 82, 0.78);
+        --shadow: rgba(0, 0, 0, 0.28);
+        --theme-toggle-bg: #3b4252;
+        --theme-toggle-active-bg: #4c566a;
+        --theme-toggle-active-color: #88c0d0;
+        --frost-wash: rgba(136, 192, 208, 0.16);
+        --aurora-wash: rgba(180, 142, 173, 0.14);
+        color-scheme: dark;
       }
 
       * {
@@ -37,9 +107,10 @@
         min-height: 100vh;
         margin: 0;
         background:
-          linear-gradient(180deg, rgba(246, 247, 244, 0.82), #f6f7f4 420px),
-          radial-gradient(circle at top left, rgba(35, 92, 99, 0.13), transparent 360px),
-          #f6f7f4;
+          linear-gradient(180deg, var(--page-wash), var(--page-bg) 420px),
+          radial-gradient(circle at top left, var(--frost-wash), transparent 360px),
+          radial-gradient(circle at 82% 8%, var(--aurora-wash), transparent 320px),
+          var(--page-bg);
       }
 
       a {
@@ -57,7 +128,7 @@
 
       .topbar {
         border-bottom: 1px solid var(--line);
-        background: rgba(255, 255, 255, 0.82);
+        background: var(--topbar-bg);
         backdrop-filter: blur(16px);
       }
 
@@ -84,9 +155,9 @@
         width: 36px;
         height: 36px;
         place-items: center;
-        border: 1px solid rgba(35, 92, 99, 0.24);
+        border: 1px solid rgba(94, 129, 172, 0.28);
         border-radius: 8px;
-        background: #ffffff;
+        background: var(--mark-bg);
         color: var(--primary);
       }
 
@@ -100,7 +171,7 @@
         border-radius: 8px;
         padding: 0 18px;
         background: var(--primary);
-        color: #ffffff;
+        color: var(--primary-contrast);
         font-weight: 800;
         text-decoration: none;
         transition:
@@ -110,7 +181,7 @@
       }
 
       .button:hover {
-        background: #1b4d54;
+        background: var(--button-hover);
         transform: translateY(-1px);
       }
 
@@ -121,8 +192,8 @@
       }
 
       .button--ghost:hover {
-        background: #ffffff;
-        border-color: #bdc8c0;
+        background: var(--ghost-hover);
+        border-color: var(--ghost-border-hover);
       }
 
       main {
@@ -172,8 +243,8 @@
       .preview {
         border: 1px solid var(--line);
         border-radius: 8px;
-        background: var(--paper);
-        box-shadow: 0 24px 60px rgba(23, 36, 34, 0.08);
+        background: var(--card-bg);
+        box-shadow: 0 24px 60px var(--shadow);
         overflow: hidden;
       }
 
@@ -269,7 +340,7 @@
       .feature {
         border: 1px solid var(--line);
         border-radius: 8px;
-        background: rgba(255, 255, 255, 0.76);
+        background: var(--card-bg-translucent);
         padding: 22px;
       }
 
@@ -291,6 +362,50 @@
         padding: 24px 0;
         color: var(--muted);
         font-size: 0.92rem;
+      }
+
+      .footer__inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .theme-toggle {
+        display: inline-grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2px;
+        width: 76px;
+        height: 38px;
+        flex: 0 0 auto;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 3px;
+        background: var(--theme-toggle-bg);
+        color: var(--muted);
+        cursor: pointer;
+      }
+
+      .theme-toggle__icon {
+        display: grid;
+        min-width: 0;
+        height: 30px;
+        place-items: center;
+        border-radius: 999px;
+        transition:
+          background-color 160ms ease,
+          color 160ms ease;
+      }
+
+      .theme-toggle__icon svg {
+        display: block;
+      }
+
+      :root:not([data-theme="dark"]) .theme-toggle__icon--sun,
+      :root[data-theme="dark"] .theme-toggle__icon--moon {
+        background: var(--theme-toggle-active-bg);
+        color: var(--theme-toggle-active-color);
       }
 
       @media (max-width: 840px) {
@@ -327,6 +442,10 @@
 
         .topbar .button {
           width: auto;
+        }
+
+        .footer__inner {
+          align-items: flex-start;
         }
       }
     </style>
@@ -430,8 +549,82 @@
       </main>
 
       <footer class="footer">
-        <div class="shell">Pulse Check отделяет личный контекст от общей статистики.</div>
+        <div class="shell footer__inner">
+          <span>Pulse Check отделяет личный контекст от общей статистики.</span>
+          <button
+            class="theme-toggle"
+            type="button"
+            aria-label="Переключить тему"
+            aria-pressed="false"
+            title="Переключить тему"
+          >
+            <span class="theme-toggle__icon theme-toggle__icon--sun" aria-hidden="true">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2" />
+                <path
+                  d="M12 2v2m0 16v2M4 12H2m20 0h-2M5 5l1.4 1.4M17.6 17.6 19 19M19 5l-1.4 1.4M6.4 17.6 5 19"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </span>
+            <span class="theme-toggle__icon theme-toggle__icon--moon" aria-hidden="true">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M20.4 15.2A8.2 8.2 0 0 1 8.8 3.6 8.4 8.4 0 1 0 20.4 15.2Z"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </span>
+          </button>
+        </div>
       </footer>
     </div>
+    <script>
+      (() => {
+        const storageKey = "pulse-check-theme-mode";
+        const toggle = document.querySelector(".theme-toggle");
+
+        if (!(toggle instanceof HTMLButtonElement)) {
+          return;
+        }
+
+        const getMode = () =>
+          document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+
+        const setMode = (mode) => {
+          document.documentElement.dataset.theme = mode;
+          document.documentElement.style.colorScheme = mode;
+          toggle.setAttribute("aria-pressed", mode === "dark" ? "true" : "false");
+          toggle.title = mode === "dark" ? "Включить светлую тему" : "Включить темную тему";
+
+          try {
+            localStorage.setItem(storageKey, mode);
+          } catch {
+            // Theme selection is still applied for the current page.
+          }
+
+          document.cookie = `${storageKey}=${mode}; path=/; max-age=31536000; SameSite=Lax`;
+        };
+
+        setMode(getMode());
+
+        toggle.addEventListener("click", () => {
+          setMode(getMode() === "dark" ? "light" : "dark");
+        });
+
+        window.addEventListener("storage", (event) => {
+          if (
+            event.key === storageKey &&
+            (event.newValue === "dark" || event.newValue === "light")
+          ) {
+            setMode(event.newValue);
+          }
+        });
+      })();
+    </script>
   </body>
 </html>

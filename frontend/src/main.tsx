@@ -3,21 +3,19 @@ import "./telemetry";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
-import { CssBaseline, ThemeProvider } from "@mui/material";
 
 import App from "./App";
 import { AuthProvider } from "./auth/keycloak";
-import { appTheme } from "./theme";
+import { AppThemeModeProvider } from "./theme-mode";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ThemeProvider theme={appTheme}>
-      <CssBaseline />
+    <AppThemeModeProvider>
       <BrowserRouter basename="/app">
         <AuthProvider>
           <App />
         </AuthProvider>
       </BrowserRouter>
-    </ThemeProvider>
+    </AppThemeModeProvider>
   </StrictMode>
 );
