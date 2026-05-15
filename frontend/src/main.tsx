@@ -13,7 +13,7 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider theme={appTheme}>
       <CssBaseline />
-      <BrowserRouter>
+      <BrowserRouter basename="/app">
         <AuthProvider>
           <App />
         </AuthProvider>

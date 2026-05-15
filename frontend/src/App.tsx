@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link as RouterLink, Route, Routes } from "react-router-dom";
-import LoginIcon from "@mui/icons-material/Login";
+import { Route, Routes } from "react-router-dom";
 import LogoutIcon from "@mui/icons-material/Logout";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import {
@@ -37,112 +36,6 @@ const stateColor: Record<
   pending: "warning",
   disabled: "default",
 };
-
-function LandingPage() {
-  const { status, login } = useAuth();
-  const isAuthenticated = status === "authenticated";
-
-  return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
-      <Box
-        component="header"
-        sx={{
-          borderBottom: 1,
-          borderColor: "divider",
-          bgcolor: "background.paper",
-        }}
-      >
-        <Container maxWidth="lg" sx={{ py: 2.5 }}>
-          <Stack
-            direction="row"
-            spacing={2}
-            alignItems="center"
-            justifyContent="space-between"
-          >
-            <Typography component="p" variant="h2">
-              Pulse Check
-            </Typography>
-
-            {isAuthenticated ? (
-              <Button component={RouterLink} to="/app" variant="contained">
-                Открыть приложение
-              </Button>
-            ) : (
-              <Button
-                variant="contained"
-                startIcon={<LoginIcon />}
-                onClick={() => void login()}
-              >
-                Войти
-              </Button>
-            )}
-          </Stack>
-        </Container>
-      </Box>
-
-      <Container component="main" maxWidth="lg" sx={{ py: { xs: 6, md: 9 } }}>
-        <Stack spacing={5} sx={{ maxWidth: 760 }}>
-          <Box>
-            <Typography component="h1" variant="h1" sx={{ fontSize: "3rem" }}>
-              Pulse Check
-            </Typography>
-            <Typography
-              color="text.secondary"
-              sx={{ mt: 2, fontSize: "1.1rem", lineHeight: 1.7 }}
-            >
-              Local-first инструмент для учета статусов без передачи
-              персональных данных на сервер. Доступ к рабочей части открыт
-              только для приглашенных пользователей.
-            </Typography>
-          </Box>
-
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
-            {isAuthenticated ? (
-              <Button component={RouterLink} to="/app" variant="contained">
-                Перейти в рабочую область
-              </Button>
-            ) : (
-              <Button
-                variant="contained"
-                startIcon={<LoginIcon />}
-                onClick={() => void login()}
-              >
-                Войти по приглашению
-              </Button>
-            )}
-            <Button component="a" href="#privacy" variant="outlined">
-              Как устроены данные
-            </Button>
-          </Stack>
-
-          <Box
-            id="privacy"
-            sx={{
-              display: "grid",
-              gap: 2,
-              gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" },
-            }}
-          >
-            {[
-              ["Локальные данные", "Атрибуты и заметки остаются на устройстве."],
-              ["Минимум сервера", "Backend хранит только технические идентификаторы и агрегаты."],
-              ["Управляемый доступ", "Учетками и блокировками управляет администратор."],
-            ].map(([title, body]) => (
-              <Paper key={title} variant="outlined" sx={{ p: 2.5 }}>
-                <Typography component="h2" variant="h2">
-                  {title}
-                </Typography>
-                <Typography color="text.secondary" sx={{ mt: 1 }}>
-                  {body}
-                </Typography>
-              </Paper>
-            ))}
-          </Box>
-        </Stack>
-      </Container>
-    </Box>
-  );
-}
 
 function ProtectedRoute() {
   const { status, login } = useAuth();
@@ -229,7 +122,7 @@ function EntitiesPage() {
             justifyContent="space-between"
           >
             <Box>
-              <Link component={RouterLink} to="/" underline="hover">
+              <Link href="/" underline="hover">
                 Pulse Check
               </Link>
               <Typography component="h1" variant="h1" sx={{ mt: 0.5 }}>
@@ -398,8 +291,7 @@ function CenteredState({
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/app/*" element={<ProtectedRoute />} />
+      <Route path="/*" element={<ProtectedRoute />} />
     </Routes>
   );
 }

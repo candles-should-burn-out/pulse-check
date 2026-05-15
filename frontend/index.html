@@ -4,9 +4,434 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pulse Check</title>
+    <meta
+      name="description"
+      content="Pulse Check помогает собирать неперсонализированную статистику: заметки остаются у пользователя, сервер считает только агрегированные показатели."
+    />
+    <style>
+      :root {
+        color: #172422;
+        background: #f6f7f4;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        --ink: #172422;
+        --muted: #5c6966;
+        --line: #d9dfd8;
+        --paper: #ffffff;
+        --primary: #235c63;
+        --secondary: #8a4f3d;
+        --accent: #39705f;
+        --soft: #e9efea;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-width: 320px;
+        min-height: 100vh;
+        margin: 0;
+        background:
+          linear-gradient(180deg, rgba(246, 247, 244, 0.82), #f6f7f4 420px),
+          radial-gradient(circle at top left, rgba(35, 92, 99, 0.13), transparent 360px),
+          #f6f7f4;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .page {
+        min-height: 100vh;
+      }
+
+      .shell {
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+      }
+
+      .topbar {
+        border-bottom: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.82);
+        backdrop-filter: blur(16px);
+      }
+
+      .topbar__inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        min-height: 72px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 1.12rem;
+        font-weight: 800;
+        letter-spacing: 0;
+        text-decoration: none;
+      }
+
+      .brand__mark {
+        display: grid;
+        width: 36px;
+        height: 36px;
+        place-items: center;
+        border: 1px solid rgba(35, 92, 99, 0.24);
+        border-radius: 8px;
+        background: #ffffff;
+        color: var(--primary);
+      }
+
+      .button {
+        display: inline-flex;
+        min-height: 42px;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        padding: 0 18px;
+        background: var(--primary);
+        color: #ffffff;
+        font-weight: 800;
+        text-decoration: none;
+        transition:
+          transform 160ms ease,
+          background-color 160ms ease,
+          border-color 160ms ease;
+      }
+
+      .button:hover {
+        background: #1b4d54;
+        transform: translateY(-1px);
+      }
+
+      .button--ghost {
+        background: transparent;
+        border-color: var(--line);
+        color: var(--ink);
+      }
+
+      .button--ghost:hover {
+        background: #ffffff;
+        border-color: #bdc8c0;
+      }
+
+      main {
+        padding: 72px 0 56px;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+        gap: 48px;
+        align-items: center;
+      }
+
+      .eyebrow {
+        margin: 0 0 14px;
+        color: var(--secondary);
+        font-size: 0.84rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        max-width: 760px;
+        margin: 0;
+        color: var(--ink);
+        font-size: clamp(2.45rem, 6vw, 5.2rem);
+        line-height: 0.97;
+        letter-spacing: 0;
+      }
+
+      .lead {
+        max-width: 650px;
+        margin: 24px 0 0;
+        color: var(--muted);
+        font-size: 1.13rem;
+        line-height: 1.75;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 32px;
+      }
+
+      .preview {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+        box-shadow: 0 24px 60px rgba(23, 36, 34, 0.08);
+        overflow: hidden;
+      }
+
+      .preview__bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        border-bottom: 1px solid var(--line);
+        padding: 16px 18px;
+      }
+
+      .preview__title {
+        margin: 0;
+        font-size: 0.94rem;
+        font-weight: 800;
+      }
+
+      .preview__badge {
+        border-radius: 999px;
+        background: var(--soft);
+        color: var(--accent);
+        padding: 5px 10px;
+        font-size: 0.78rem;
+        font-weight: 800;
+      }
+
+      .preview__body {
+        display: grid;
+        gap: 16px;
+        padding: 18px;
+      }
+
+      .metric-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 16px;
+        align-items: center;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 14px;
+      }
+
+      .metric-row:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+      }
+
+      .metric-row strong {
+        display: block;
+        color: var(--ink);
+        font-size: 1rem;
+      }
+
+      .metric-row span {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1.45;
+      }
+
+      .metric-row b {
+        justify-self: end;
+        border-radius: 999px;
+        background: var(--soft);
+        color: var(--primary);
+        padding: 6px 10px;
+        font-size: 0.78rem;
+        letter-spacing: 0;
+        white-space: nowrap;
+      }
+
+      .section {
+        margin-top: 64px;
+      }
+
+      .section h2 {
+        max-width: 680px;
+        margin: 0;
+        color: var(--ink);
+        font-size: clamp(1.75rem, 4vw, 2.6rem);
+        line-height: 1.08;
+        letter-spacing: 0;
+      }
+
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 24px;
+      }
+
+      .feature {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.76);
+        padding: 22px;
+      }
+
+      .feature h3 {
+        margin: 0;
+        color: var(--ink);
+        font-size: 1.08rem;
+        letter-spacing: 0;
+      }
+
+      .feature p {
+        margin: 10px 0 0;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      .footer {
+        border-top: 1px solid var(--line);
+        padding: 24px 0;
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      @media (max-width: 840px) {
+        main {
+          padding-top: 48px;
+        }
+
+        .hero,
+        .feature-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .preview {
+          max-width: 560px;
+        }
+      }
+
+      @media (max-width: 520px) {
+        .shell {
+          width: min(100% - 24px, 1120px);
+        }
+
+        .topbar__inner {
+          min-height: 64px;
+        }
+
+        .brand span:last-child {
+          display: none;
+        }
+
+        .button {
+          width: 100%;
+        }
+
+        .topbar .button {
+          width: auto;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <div class="page">
+      <header class="topbar">
+        <div class="shell topbar__inner">
+          <a class="brand" href="/" aria-label="Pulse Check">
+            <span class="brand__mark" aria-hidden="true">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M4 12h4l2.2-5 3.6 10 2.2-5h4"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </span>
+            <span>Pulse Check</span>
+          </a>
+          <a class="button" href="/app/">Войти</a>
+        </div>
+      </header>
+
+      <main>
+        <section class="shell hero" aria-labelledby="hero-title">
+          <div>
+            <p class="eyebrow">Неперсонализированная статистика сообществ</p>
+            <h1 id="hero-title">Pulse Check</h1>
+            <p class="lead">
+              Сервис для аккуратного сбора и просмотра агрегированных
+              показателей без хранения персональных заметок на сервере. Вы
+              фиксируете контекст у себя, а сервер считает только обезличенную
+              статистику.
+            </p>
+            <div class="actions" aria-label="Основные действия">
+              <a class="button" href="/app/">Войти</a>
+              <a class="button button--ghost" href="#features">Как это работает</a>
+            </div>
+          </div>
+
+          <div class="preview" aria-label="Пример агрегированной сводки">
+            <div class="preview__bar">
+              <p class="preview__title">Сводка наблюдений</p>
+              <span class="preview__badge">без персональных данных</span>
+            </div>
+            <div class="preview__body">
+              <div class="metric-row">
+                <div>
+                  <strong>Локальные заметки</strong>
+                  <span>Метаинформация остается на вашем устройстве.</span>
+                </div>
+                <b>только у вас</b>
+              </div>
+              <div class="metric-row">
+                <div>
+                  <strong>Агрегаты на сервере</strong>
+                  <span>Сервер считает общую статистику без личного контекста.</span>
+                </div>
+                <b>обезличено</b>
+              </div>
+              <div class="metric-row">
+                <div>
+                  <strong>Помощники</strong>
+                  <span>Участники помогают собирать данные для общей картины.</span>
+                </div>
+                <b>под вашим контролем</b>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="shell section" id="features" aria-labelledby="features-title">
+          <h2 id="features-title">Возможности Pulse Check</h2>
+          <div class="feature-grid">
+            <article class="feature">
+              <h3>Ведение заметок</h3>
+              <p>
+                Используйте локальную метаинформацию для собственного контекста:
+                она не отправляется и не хранится на сервере.
+              </p>
+            </article>
+            <article class="feature">
+              <h3>Агрегированная статистика</h3>
+              <p>
+                Backend получает только данные, нужные для агрегированных
+                показателей, сводок и сравнения состояний.
+              </p>
+            </article>
+            <article class="feature">
+              <h3>Командный сбор данных</h3>
+              <p>
+                Назначайте участников, которые помогают собирать показатели, и
+                просматривайте их вклад в своей рабочей области.
+              </p>
+            </article>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <div class="shell">Pulse Check отделяет личный контекст от общей статистики.</div>
+      </footer>
+    </div>
   </body>
 </html>
