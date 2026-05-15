@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>404 - Pulse Check</title>
+    <style>
+      :root {
+        color: #172422;
+        background: #f6f7f4;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        --ink: #172422;
+        --muted: #5c6966;
+        --line: #d9dfd8;
+        --paper: #ffffff;
+        --primary: #235c63;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-width: 320px;
+        min-height: 100vh;
+        margin: 0;
+        background: #f6f7f4;
+      }
+
+      main {
+        display: grid;
+        min-height: 100vh;
+        place-items: center;
+        padding: 32px;
+      }
+
+      .panel {
+        width: min(640px, 100%);
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+      }
+
+      .content {
+        display: grid;
+        min-height: 360px;
+        place-items: center;
+        padding: 48px 32px;
+        text-align: center;
+      }
+
+      .code {
+        margin: 0;
+        color: var(--primary);
+        font-size: clamp(4.75rem, 18vw, 6.5rem);
+        font-weight: 800;
+        line-height: 0.9;
+      }
+
+      h1 {
+        margin: 24px 0 0;
+        color: var(--ink);
+        font-size: 2rem;
+        line-height: 1.15;
+        letter-spacing: 0;
+      }
+
+      p {
+        margin: 12px auto 0;
+        max-width: 440px;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      a {
+        display: inline-flex;
+        min-height: 42px;
+        align-items: center;
+        justify-content: center;
+        margin-top: 28px;
+        border-radius: 8px;
+        padding: 0 18px;
+        background: var(--primary);
+        color: #ffffff;
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      a:hover {
+        background: #1b4d54;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="panel" aria-labelledby="not-found-title">
+        <div class="content">
+          <div>
+            <p class="code" aria-hidden="true">404</p>
+            <h1 id="not-found-title">Страница не найдена</h1>
+            <p>Такой страницы нет или она была перемещена.</p>
+            <a href="/">На главную</a>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

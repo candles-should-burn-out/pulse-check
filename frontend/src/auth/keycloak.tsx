@@ -50,9 +50,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   const login = useCallback(async () => {
-    await keycloak.login({
+    const loginUrl = await keycloak.createLoginUrl({
       redirectUri: `${appPublicUrl}/app/`,
     });
+
+    window.location.replace(loginUrl);
+    await new Promise<void>(() => {});
   }, []);
 
   const logout = useCallback(async () => {
@@ -63,10 +66,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const getAccessToken = useCallback(async () => {
     if (!keycloak.authenticated) {
-      await keycloak.login({
-        redirectUri: `${appPublicUrl}/app/`,
-      });
-      throw new Error("Пользователь не авторизован");
+      await login();
     }
 
     await keycloak.updateToken(30);
@@ -76,7 +76,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
 
     return keycloak.token;
-  }, []);
+  }, [login]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
