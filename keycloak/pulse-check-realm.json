@@ -1,6 +1,7 @@
 {
   "realm": "pulse-check",
   "enabled": true,
+  "loginTheme": "pulse-check",
   "registrationAllowed": false,
   "resetPasswordAllowed": true,
   "loginWithEmailAllowed": true,

@@ -33,6 +33,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
+        VITE_APP_PUBLIC_URL: ${APP_PUBLIC_URL:?set APP_PUBLIC_URL}
         VITE_KEYCLOAK_URL: ${VITE_KEYCLOAK_URL:?set VITE_KEYCLOAK_URL}
         VITE_KEYCLOAK_REALM: ${VITE_KEYCLOAK_REALM:-pulse-check}
         VITE_KEYCLOAK_CLIENT_ID: ${VITE_KEYCLOAK_CLIENT_ID:-pulse-check-frontend}
@@ -87,6 +88,7 @@ services:
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?set KEYCLOAK_ADMIN_PASSWORD}
     volumes:
       - ./keycloak/pulse-check-realm.json:/opt/keycloak/data/import/pulse-check-realm.json:ro
+      - ./keycloak/themes/pulse-check:/opt/keycloak/themes/pulse-check:ro
     ports:
       - "127.0.0.1:${KEYCLOAK_PORT:-8081}:8080"
     depends_on:

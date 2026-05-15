@@ -18,6 +18,9 @@ const keycloakConfig = {
 };
 
 const keycloak: KeycloakInstance = new Keycloak(keycloakConfig);
+const appPublicUrl =
+  import.meta.env.VITE_APP_PUBLIC_URL?.replace(/\/$/, "") ??
+  window.location.origin;
 
 let initPromise: Promise<boolean> | null = null;
 
@@ -28,8 +31,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     if (!initPromise) {
       initPromise = keycloak.init({
-        onLoad: "check-sso",
         pkceMethod: "S256",
+        responseMode: "query",
         checkLoginIframe: false,
       });
     }
@@ -39,7 +42,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
         setStatus(authenticated ? "authenticated" : "anonymous");
         setUserName(readUserName(keycloak));
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error("Keycloak init failed", error);
         setStatus("error");
         setUserName(null);
       });
@@ -47,20 +51,20 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const login = useCallback(async () => {
     await keycloak.login({
-      redirectUri: `${window.location.origin}/app`,
+      redirectUri: `${appPublicUrl}/app/`,
     });
   }, []);
 
   const logout = useCallback(async () => {
     await keycloak.logout({
-      redirectUri: window.location.origin,
+      redirectUri: appPublicUrl,
     });
   }, []);
 
   const getAccessToken = useCallback(async () => {
     if (!keycloak.authenticated) {
       await keycloak.login({
-        redirectUri: window.location.href,
+        redirectUri: `${appPublicUrl}/app/`,
       });
       throw new Error("Пользователь не авторизован");
     }

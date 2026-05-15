@@ -34,7 +34,8 @@ if (collectorEndpoint) {
     instrumentations: [
       new FetchInstrumentation({
         clearTimingResources: true,
-        propagateTraceHeaderCorsUrls: [/.*/],
+        ignoreUrls: [/\/realms\/pulse-check\/protocol\/openid-connect\//],
+        propagateTraceHeaderCorsUrls: [/^\/api(\/|$)/],
       }),
     ],
   });

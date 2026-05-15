@@ -16,8 +16,8 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      keycloak:
-        condition: service_healthy
+      keycloak-seed:
+        condition: service_completed_successfully
       otel-collector:
         condition: service_started
     healthcheck:
@@ -33,6 +33,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_BASE_URL: /api
+        VITE_APP_PUBLIC_URL: http://localhost:3000
         VITE_KEYCLOAK_URL: http://localhost:8081
         VITE_KEYCLOAK_REALM: pulse-check
         VITE_KEYCLOAK_CLIENT_ID: pulse-check-frontend
@@ -44,6 +45,8 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+      keycloak-seed:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
       interval: 10s
@@ -82,6 +85,7 @@ services:
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-pulse-check-local-admin-password}
     volumes:
       - ./keycloak/pulse-check-realm.json:/opt/keycloak/data/import/pulse-check-realm.json:ro
+      - ./keycloak/themes/pulse-check:/opt/keycloak/themes/pulse-check:ro
     ports:
       - "8081:8080"
     depends_on:
@@ -97,6 +101,44 @@ services:
       timeout: 5s
       retries: 20
       start_period: 30s
+
+  keycloak-seed:
+    image: quay.io/keycloak/keycloak:26.6.1
+    environment:
+      KEYCLOAK_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-pulse-check-local-admin-password}
+    entrypoint: ["/bin/bash", "-ec"]
+    command:
+      - |
+        /opt/keycloak/bin/kcadm.sh config credentials \
+          --server http://keycloak:8080 \
+          --realm master \
+          --user "$${KEYCLOAK_ADMIN_USERNAME}" \
+          --password "$${KEYCLOAK_ADMIN_PASSWORD}"
+
+        /opt/keycloak/bin/kcadm.sh update realms/pulse-check -s loginTheme=pulse-check
+
+        FRONTEND_CLIENT_ID=$$(/opt/keycloak/bin/kcadm.sh get clients -r pulse-check -q clientId=pulse-check-frontend --fields id --format csv --noquotes | tail -n 1)
+        /opt/keycloak/bin/kcadm.sh update "clients/$${FRONTEND_CLIENT_ID}" -r pulse-check \
+          -s 'redirectUris=["http://localhost:3000/*","http://localhost:5173/*"]' \
+          -s 'webOrigins=["http://localhost:3000","http://localhost:5173"]' \
+          -s 'attributes."post.logout.redirect.uris"="http://localhost:3000/*##http://localhost:5173/*"'
+
+        if ! /opt/keycloak/bin/kcadm.sh get users -r pulse-check -q username=admin --fields id --format csv --noquotes | grep -q .; then
+          /opt/keycloak/bin/kcadm.sh create users -r pulse-check \
+            -s username=admin \
+            -s enabled=true \
+            -s email=admin@pulse-check.local \
+            -s emailVerified=true \
+            -s firstName=Local \
+            -s lastName=Admin
+        fi
+
+        ADMIN_ID=$$(/opt/keycloak/bin/kcadm.sh get users -r pulse-check -q username=admin --fields id --format csv --noquotes | tail -n 1)
+        /opt/keycloak/bin/kcadm.sh set-password -r pulse-check --userid "$${ADMIN_ID}" --new-password admin
+    depends_on:
+      keycloak:
+        condition: service_healthy
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.102.1

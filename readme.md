@@ -101,6 +101,7 @@ Backend защищает product API через Bearer JWT:
 - `backend` экспортирует трейсы по OTLP/HTTP в `otel-collector:4318`
 - `frontend` экспортирует браузерные fetch-трейсы по OTLP/HTTP в `http://localhost:4318`
 - `keycloak` поднимает локальную OIDC-авторизацию на `http://localhost:8081`
+- `keycloak-seed` применяет локальную тему входа и создаёт тестового пользователя `admin` / `admin`
 - `keycloak-postgres` хранит состояние Keycloak в named volume `keycloak-postgres-data`
 - `otel-collector` принимает OTLP/gRPC на `4317` и OTLP/HTTP на `4318`
 - `tempo-init` подготавливает права на volume `tempo-data`
@@ -148,9 +149,10 @@ task up
 2. Открыть Keycloak Admin Console: `http://localhost:8081/admin`.
 3. Войти локальным bootstrap-админом из `.env` или дефолтом `admin` / `pulse-check-local-admin-password`.
 4. Перейти в realm `pulse-check`.
-5. Создать пользователя, указать email, включить `Email verified` для локального стенда или настроить SMTP.
-6. В `Credentials` задать временный пароль.
-7. Открыть `http://localhost:3000/app`, войти созданным пользователем и загрузить сущности.
+5. Для быстрой проверки открыть `http://localhost:3000/app` и войти тестовым пользователем `admin` / `admin`.
+6. Для проверки пользовательского сценария создать отдельного пользователя, указать email, включить `Email verified` для локального стенда или настроить SMTP.
+7. В `Credentials` задать временный пароль.
+8. Войти созданным пользователем и загрузить сущности.
 
 Для локальной настройки можно скопировать `.env.example` в `.env` и заменить секреты. Файл `.env` не коммитится.
 
