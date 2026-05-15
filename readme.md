@@ -143,6 +143,13 @@ Access logs бекенда пишутся в JSON и содержат `trace_id`
 task up
 ```
 
+Перезапуск только приложения без перезапуска Keycloak, Grafana и остальной инфраструктуры:
+
+```sh
+task backend-restart
+task frontend-restart
+```
+
 Локальная проверка авторизации:
 
 1. Открыть frontend: `http://localhost:3000`.

@@ -26,6 +26,18 @@ tasks:
       - task: down
       - task: up
 
+  backend-restart:
+    desc: Rebuild and restart only the backend service
+    cmds:
+      - "{{.COMPOSE}} up --build -d --no-deps --force-recreate backend"
+      - "{{.COMPOSE}} ps backend"
+
+  frontend-restart:
+    desc: Rebuild and restart only the frontend service
+    cmds:
+      - "{{.COMPOSE}} up --build -d --no-deps --force-recreate frontend"
+      - "{{.COMPOSE}} ps frontend"
+
   build:
     desc: Build Docker images
     cmds:
