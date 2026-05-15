@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Вход в Pulse Check</title>
+    <title>Восстановление доступа к Pulse Check</title>
     <script src="${url.resourcesPath}/js/theme-mode.js"></script>
     <link rel="stylesheet" href="${url.resourcesPath}/css/login.css" />
   </head>
@@ -58,16 +58,12 @@
       </header>
 
       <main>
-        <section class="shell hero" aria-labelledby="login-title">
-          <div class="intro">
-            <h1 id="login-title">Вход в Pulse Check</h1>
-          </div>
-
+        <section class="shell auth-flow" aria-labelledby="reset-title">
           <div class="login-panel">
             <div class="login-panel__header">
               <div>
-                <p class="panel-title">Авторизация</p>
-                <p class="panel-subtitle">Введите логин и пароль</p>
+                <h1 id="reset-title" class="panel-title">Сброс пароля</h1>
+                <p class="panel-subtitle">Укажите логин или email от учетной записи</p>
               </div>
               <span class="panel-badge">OIDC</span>
             </div>
@@ -78,7 +74,7 @@
               </div>
             </#if>
 
-            <form id="kc-form-login" class="form" action="${url.loginAction}" method="post">
+            <form id="kc-reset-password-form" class="form" action="${url.loginAction}" method="post">
               <div class="field">
                 <label for="username">
                   <#if !realm.loginWithEmailAllowed>
@@ -93,50 +89,23 @@
                   id="username"
                   name="username"
                   type="text"
-                  value="${login.username!''}"
+                  value="${(auth.attemptedUsername!'')}"
                   autocomplete="username"
                   autofocus
-                  <#if usernameEditDisabled??>disabled</#if>
+                  aria-invalid="<#if messagesPerField?? && messagesPerField.existsError('username')>true<#else>false</#if>"
+                  aria-describedby="<#if messagesPerField?? && messagesPerField.existsError('username')>input-error-username</#if>"
                 />
-              </div>
-
-              <div class="field">
-                <label for="password">Пароль</label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autocomplete="current-password"
-                />
-              </div>
-
-              <#if credentialId??>
-                <input type="hidden" name="credentialId" value="${credentialId}" />
-              </#if>
-
-              <div class="form-row">
-                <#if realm.rememberMe && !(usernameEditDisabled??)>
-                  <label class="check">
-                    <input
-                      id="rememberMe"
-                      name="rememberMe"
-                      type="checkbox"
-                      <#if login.rememberMe??>checked</#if>
-                    />
-                    <span>Запомнить меня</span>
-                  </label>
-                </#if>
-
-                <#if realm.resetPasswordAllowed>
-                  <a class="text-link" href="${url.loginResetCredentialsUrl}">
-                    Забыли пароль?
-                  </a>
+                <#if messagesPerField?? && messagesPerField.existsError('username')>
+                  <span id="input-error-username" class="field-error" aria-live="polite">
+                    ${kcSanitize(messagesPerField.get('username'))?no_esc}
+                  </span>
                 </#if>
               </div>
 
-              <button class="button" id="kc-login" name="login" type="submit">
-                Войти
-              </button>
+              <div class="form-row form-row--actions">
+                <a class="text-link" href="${url.loginUrl}">Вернуться ко входу</a>
+                <button class="button" type="submit">Отправить</button>
+              </div>
             </form>
           </div>
         </section>

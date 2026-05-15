@@ -169,6 +169,15 @@ main {
   align-items: center;
 }
 
+.auth-flow {
+  display: grid;
+  justify-content: center;
+}
+
+.auth-flow .login-panel {
+  width: min(100%, 560px);
+}
+
 .eyebrow {
   margin: 0 0 14px;
   color: var(--secondary);
@@ -282,6 +291,7 @@ label {
 }
 
 input[type="text"],
+input[type="email"],
 input[type="password"] {
   width: 100%;
   min-height: 44px;
@@ -298,9 +308,21 @@ input[type="password"] {
 }
 
 input[type="text"]:focus,
+input[type="email"]:focus,
 input[type="password"]:focus {
   border-color: rgba(136, 192, 208, 0.74);
   box-shadow: 0 0 0 3px rgba(136, 192, 208, 0.18);
+}
+
+input[aria-invalid="true"] {
+  border-color: rgba(191, 97, 106, 0.56);
+}
+
+.field-error {
+  color: #bf616a;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
 .form-row {
@@ -309,6 +331,14 @@ input[type="password"]:focus {
   justify-content: space-between;
   gap: 12px;
   min-height: 24px;
+}
+
+.form-row--actions {
+  align-items: center;
+}
+
+.form-row--actions .button {
+  min-width: 132px;
 }
 
 .check {
@@ -382,5 +412,9 @@ input[type="password"]:focus {
   .form-row {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .form-row--actions .button {
+    width: 100%;
   }
 }
