@@ -1,7 +1,5 @@
 # ADR-0004: Observability stack for local and production
 
-Date: 2026-05-15
-
 Status: Accepted
 
 ## Context

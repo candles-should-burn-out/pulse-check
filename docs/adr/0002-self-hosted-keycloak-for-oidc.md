@@ -1,7 +1,5 @@
 # ADR-0002: Self-hosted Keycloak for OIDC
 
-Date: 2026-05-15
-
 Status: Accepted
 
 ## Context

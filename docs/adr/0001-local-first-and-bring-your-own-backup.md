@@ -1,7 +1,5 @@
 # ADR-0001: Local-first and Bring Your Own Backup
 
-Date: 2026-05-15
-
 Status: Accepted
 
 ## Context
