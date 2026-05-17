@@ -1,4 +1,4 @@
-export type StatusRole = "status_owner" | "assistant";
+export type StatusRole = "status_owner" | "participant";
 
 export const STATUS_NAME_MAX_LENGTH = 40;
 
@@ -149,7 +149,7 @@ function isStatusSet(value: unknown): value is StatusSet {
     "statuses" in value &&
     typeof value.id === "string" &&
     typeof value.owner_user_id === "string" &&
-    (value.role === "status_owner" || value.role === "assistant") &&
+    (value.role === "status_owner" || value.role === "participant") &&
     Array.isArray(value.statuses) &&
     value.statuses.every(isStatusDefinition)
   );

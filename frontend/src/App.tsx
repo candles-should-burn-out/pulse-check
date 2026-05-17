@@ -856,7 +856,7 @@ function StatusesPage() {
   return (
     <Stack spacing={3}>
       {error ? <Alert severity="error">{error}</Alert> : null}
-      {statusSet?.role === "assistant" ? (
+      {statusSet?.role === "participant" ? (
         <Alert severity="info">Набор статусов управляется владельцем.</Alert>
       ) : null}
 
@@ -1173,7 +1173,7 @@ function StatusStatisticsPage() {
                       <StatusPreview status={status} />
                     </TableCell>
                     <TableCell>
-                      {statusSet?.role === "assistant" ? "Помощник" : "Владелец"}
+                      {statusSet?.role === "participant" ? "Участник" : "Владелец"}
                     </TableCell>
                   </TableRow>
                 ))}

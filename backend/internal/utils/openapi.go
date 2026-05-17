@@ -549,7 +549,7 @@ const OpenAPISchema = `{
             "type": "string",
             "enum": [
               "status_owner",
-              "assistant"
+              "participant"
             ]
           },
           "statuses": {

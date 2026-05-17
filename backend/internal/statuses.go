@@ -16,10 +16,10 @@ import (
 )
 
 const (
-	StatusRoleOwner     = "status_owner"
-	StatusRoleAssistant = "assistant"
-	DefaultStatusLimit  = 50
-	StatusNameMaxLength = 40
+	StatusRoleOwner       = "status_owner"
+	StatusRoleParticipant = "participant"
+	DefaultStatusLimit    = 50
+	StatusNameMaxLength   = 40
 )
 
 var (
@@ -257,7 +257,7 @@ func (s *memoryStatusStore) ensureMembershipLocked(userID string) statusSetMembe
 }
 
 func (s *memoryStatusStore) statusSetLocked(membership statusSetMembership) StatusSet {
-	role := StatusRoleAssistant
+	role := StatusRoleParticipant
 	if membership.UserID == membership.OwnerUserID {
 		role = StatusRoleOwner
 	}
@@ -323,7 +323,7 @@ func (s *PostgresStatusStore) GetStatusSet(ctx context.Context, userID string) (
 		return StatusSet{}, err
 	}
 
-	role := StatusRoleAssistant
+	role := StatusRoleParticipant
 	if membership.UserID == membership.OwnerUserID {
 		role = StatusRoleOwner
 	}
