@@ -52,9 +52,3 @@ Pulse Check строится как local-first приложение. User-owned
 - Пользователь может потерять локальные данные, если не создает и не хранит backup.
 - Product features, которым нужны shared readable data, требуют отдельного explicit architecture decision.
 - Privacy boundary становится базовым ограничением для backend API, logs, metrics, traces и support workflows.
-
-## Проработка
-
-- Спроектировать точный формат `manifest.json`, `data.json` и `checksums.json`.
-- Выбрать схему шифрования backup и UX хранения ключа или пароля.
-- Спроектировать conflict resolution для импорта backup поверх существующих локальных данных.

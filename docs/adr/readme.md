@@ -1,6 +1,7 @@
-# Architecture Decision Records
+- [Правила составления ADR](../rules/adr_rules.md)
+- [Актуальная рхитектура](../architecture)
 
-[Правила составления ADR](rules.md)
+# Architecture Decision Records:
 
 - [ADR-0001: Local-first and Bring Your Own Backup](0001-local-first-and-bring-your-own-backup.md)
 - [ADR-0002: Self-hosted Keycloak for OIDC](0002-self-hosted-keycloak-for-oidc.md)
