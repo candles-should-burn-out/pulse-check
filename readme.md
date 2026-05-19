@@ -46,10 +46,3 @@ cd backend && go test ./...
 cd frontend && npm run lint
 cd frontend && npm run build
 ```
-
-Ручные проверки:
-
-- `/` открывается без авторизации.
-- `/app` редиректит на Keycloak.
-- После входа frontend отправляет `Authorization: Bearer <token>` и защищенные API-вызовы работают.
-- Logout возвращает пользователя на публичную страницу.
