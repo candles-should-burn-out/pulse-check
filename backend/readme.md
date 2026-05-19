@@ -18,10 +18,11 @@ HTTP_ADDR=:9090 go run ./cmd/app
 
 - `GET /entities` returns a hardcoded entity list and requires a valid Keycloak Bearer token when OIDC env vars are set.
 - `GET /metrics` exposes `pulse_check_entity_list_requests_total` in Prometheus text format.
-- `GET /swagger/` returns the OpenAPI 3.0 schema.
 - `GET /health/live` and `GET /livez` are liveness probes.
 - `GET /health/ready` and `GET /readyz` are readiness probes.
 - `GET /health/startup` and `GET /startupz` are startup probes.
+
+The OpenAPI 3.0 schema is maintained in [`../docs/api/openapi.json`](../docs/api/openapi.json).
 
 The application handles `SIGINT` and `SIGTERM`, flips readiness to false, and gracefully shuts down the HTTP server.
 

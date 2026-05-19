@@ -64,7 +64,6 @@ func (a *App) Routes() http.Handler {
 	mux.Handle("/statuses", a.protected(http.HandlerFunc(a.handleStatuses)))
 	mux.Handle("/statuses/", a.protected(http.HandlerFunc(a.handleStatusByID)))
 	mux.HandleFunc("/metrics", a.handleMetrics)
-	mux.HandleFunc("/swagger/", a.handleSwagger)
 
 	mux.HandleFunc("/health/live", a.handleLive)
 	mux.HandleFunc("/health/ready", a.handleReady)
@@ -204,17 +203,6 @@ func (a *App) handleMetrics(w http.ResponseWriter, r *http.Request) {
 	_, _ = fmt.Fprintf(w, "# HELP %s Total number of entity list requests.\n", entityListRequestsMetric)
 	_, _ = fmt.Fprintf(w, "# TYPE %s counter\n", entityListRequestsMetric)
 	_, _ = fmt.Fprintf(w, "%s %d\n", entityListRequestsMetric, a.entityListRequests.Load())
-}
-
-func (a *App) handleSwagger(w http.ResponseWriter, r *http.Request) { // TODO: Переделать на заполняемую из кода
-	if r.Method != http.MethodGet {
-		methodNotAllowed(w, http.MethodGet)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(utils.OpenAPISchema))
 }
 
 func (a *App) handleLive(w http.ResponseWriter, r *http.Request) {

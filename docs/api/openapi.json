@@ -1,6 +1,4 @@
-package utils
-
-const OpenAPISchema = `{
+{
   "openapi": "3.0.3",
   "info": {
     "title": "Pulse Check Backend API",
@@ -147,6 +145,9 @@ const OpenAPISchema = `{
           "403": {
             "$ref": "#/components/responses/Forbidden"
           },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
           "409": {
             "description": "Status limit reached.",
             "content": {
@@ -159,9 +160,6 @@ const OpenAPISchema = `{
                 }
               }
             }
-          },
-          "405": {
-            "$ref": "#/components/responses/MethodNotAllowed"
           }
         }
       }
@@ -284,27 +282,6 @@ const OpenAPISchema = `{
         }
       }
     },
-    "/swagger/": {
-      "get": {
-        "summary": "OpenAPI schema",
-        "operationId": "getOpenAPISchema",
-        "responses": {
-          "200": {
-            "description": "OpenAPI schema for this service.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "405": {
-            "$ref": "#/components/responses/MethodNotAllowed"
-          }
-        }
-      }
-    },
     "/health/live": {
       "get": {
         "summary": "Liveness probe",
@@ -327,6 +304,9 @@ const OpenAPISchema = `{
           "200": {
             "$ref": "#/components/responses/HealthOK"
           },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
           "503": {
             "description": "Application is not ready.",
             "content": {
@@ -339,9 +319,6 @@ const OpenAPISchema = `{
                 }
               }
             }
-          },
-          "405": {
-            "$ref": "#/components/responses/MethodNotAllowed"
           }
         }
       }
@@ -353,6 +330,9 @@ const OpenAPISchema = `{
         "responses": {
           "200": {
             "$ref": "#/components/responses/HealthOK"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
           },
           "503": {
             "description": "Application is still starting.",
@@ -366,9 +346,6 @@ const OpenAPISchema = `{
                 }
               }
             }
-          },
-          "405": {
-            "$ref": "#/components/responses/MethodNotAllowed"
           }
         }
       }
@@ -395,6 +372,9 @@ const OpenAPISchema = `{
           "200": {
             "$ref": "#/components/responses/HealthOK"
           },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
           "503": {
             "description": "Application is not ready.",
             "content": {
@@ -407,9 +387,6 @@ const OpenAPISchema = `{
                 }
               }
             }
-          },
-          "405": {
-            "$ref": "#/components/responses/MethodNotAllowed"
           }
         }
       }
@@ -421,6 +398,9 @@ const OpenAPISchema = `{
         "responses": {
           "200": {
             "$ref": "#/components/responses/HealthOK"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
           },
           "503": {
             "description": "Application is still starting.",
@@ -434,9 +414,6 @@ const OpenAPISchema = `{
                 }
               }
             }
-          },
-          "405": {
-            "$ref": "#/components/responses/MethodNotAllowed"
           }
         }
       }
@@ -663,4 +640,3 @@ const OpenAPISchema = `{
     }
   }
 }
-`
