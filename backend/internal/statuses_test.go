@@ -111,17 +111,19 @@ func TestStatusNameMaxLength(t *testing.T) {
 }
 
 func TestParticipantCannotModifyStatuses(t *testing.T) {
+	ownerUserID := "22222222-2222-4222-8222-222222222222"
+	participantUserID := "33333333-3333-4333-8333-333333333333"
 	store := NewMemoryStatusStore(DefaultStatusLimit).(*memoryStatusStore)
-	ownerSet, err := store.GetStatusSet(context.Background(), "owner")
+	ownerSet, err := store.GetStatusSet(context.Background(), ownerUserID)
 	if err != nil {
 		t.Fatalf("create owner set: %v", err)
 	}
 
 	store.mu.Lock()
-	store.memberships["participant"] = statusSetMembership{
-		UserID:      "participant",
+	store.memberships[participantUserID] = statusSetMembership{
+		UserID:      participantUserID,
 		StatusSetID: ownerSet.ID,
-		OwnerUserID: "owner",
+		OwnerUserID: ownerUserID,
 	}
 	store.mu.Unlock()
 
@@ -136,7 +138,7 @@ func TestParticipantCannotModifyStatuses(t *testing.T) {
 		BackgroundColor: "#e8f0fb",
 		TextColor:       "#24344d",
 	}))
-	request = request.WithContext(context.WithValue(request.Context(), authContextKey, &TokenClaims{Subject: "participant"}))
+	request = request.WithContext(context.WithValue(request.Context(), authContextKey, &TokenClaims{Subject: participantUserID}))
 	handler.ServeHTTP(recorder, request)
 
 	if recorder.Code != http.StatusForbidden {

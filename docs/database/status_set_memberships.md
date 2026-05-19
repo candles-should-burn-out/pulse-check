@@ -4,9 +4,9 @@
 
 | Поле            | Тип           | Constraint | Ограничения                                                                                               |
 |-----------------|---------------|------------|-----------------------------------------------------------------------------------------------------------|
-| `user_id`       | `TEXT`        | not null   | Первичный ключ; один набор статусов на аккаунт                                                            |
+| `user_id`       | `UUID`        | not null   | UUID пользователя из Keycloak `sub`; первичный ключ; один набор статусов на аккаунт                        |
 | `status_set_id` | `UUID`        | not null   | Внешний ключ на `status_sets.id` с `ON DELETE CASCADE`; индекс `status_set_memberships_status_set_id_idx` |
-| `owner_user_id` | `TEXT`        | not null   | Идентификатор владельца набора статусов                                                                   |
+| `owner_user_id` | `UUID`        | not null   | UUID владельца набора статусов из Keycloak `sub`                                                          |
 | `created_at`    | `TIMESTAMPTZ` | not null   | Дата создания связи                                                                                       |
 
 Дополнительные заметки:

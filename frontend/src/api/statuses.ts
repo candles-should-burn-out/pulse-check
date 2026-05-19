@@ -27,6 +27,8 @@ export type StatusInput = {
 };
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export async function fetchStatusSet(
   accessToken: string,
@@ -147,8 +149,8 @@ function isStatusSet(value: unknown): value is StatusSet {
     "owner_user_id" in value &&
     "role" in value &&
     "statuses" in value &&
-    typeof value.id === "string" &&
-    typeof value.owner_user_id === "string" &&
+    isUUID(value.id) &&
+    isUUID(value.owner_user_id) &&
     (value.role === "status_owner" || value.role === "participant") &&
     Array.isArray(value.statuses) &&
     value.statuses.every(isStatusDefinition)
@@ -166,7 +168,7 @@ function isStatusDefinition(value: unknown): value is StatusDefinition {
     "text_color" in value &&
     "created_at" in value &&
     "updated_at" in value &&
-    typeof value.id === "string" &&
+    isUUID(value.id) &&
     typeof value.name === "string" &&
     typeof value.border_color === "string" &&
     typeof value.background_color === "string" &&
@@ -174,4 +176,8 @@ function isStatusDefinition(value: unknown): value is StatusDefinition {
     typeof value.created_at === "string" &&
     typeof value.updated_at === "string"
   );
+}
+
+function isUUID(value: unknown): value is string {
+  return typeof value === "string" && uuidPattern.test(value);
 }

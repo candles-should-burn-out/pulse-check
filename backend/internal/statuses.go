@@ -20,6 +20,7 @@ const (
 	StatusRoleParticipant = "participant"
 	DefaultStatusLimit    = 50
 	StatusNameMaxLength   = 40
+	LocalUserID           = "00000000-0000-4000-8000-000000000001"
 )
 
 var (
@@ -514,17 +515,55 @@ func (s *PostgresStatusStore) initSchema(ctx context.Context) error {
 	_, err := s.db.ExecContext(ctx, `
 		CREATE TABLE IF NOT EXISTS status_sets (
 			id UUID PRIMARY KEY,
-			owner_user_id TEXT NOT NULL UNIQUE,
+			owner_user_id UUID NOT NULL UNIQUE,
 			created_at TIMESTAMPTZ NOT NULL,
 			updated_at TIMESTAMPTZ NOT NULL
 		);
 
 		CREATE TABLE IF NOT EXISTS status_set_memberships (
-			user_id TEXT PRIMARY KEY,
+			user_id UUID PRIMARY KEY,
 			status_set_id UUID NOT NULL REFERENCES status_sets(id) ON DELETE CASCADE,
-			owner_user_id TEXT NOT NULL,
+			owner_user_id UUID NOT NULL,
 			created_at TIMESTAMPTZ NOT NULL
 		);
+
+		DO $$
+		BEGIN
+			IF EXISTS (
+				SELECT 1
+				FROM information_schema.columns
+				WHERE table_name = 'status_sets'
+					AND column_name = 'owner_user_id'
+					AND data_type = 'text'
+			) THEN
+				UPDATE status_sets
+				SET owner_user_id = '00000000-0000-4000-8000-000000000001'
+				WHERE owner_user_id = 'local-user';
+
+				ALTER TABLE status_sets
+					ALTER COLUMN owner_user_id TYPE UUID USING owner_user_id::uuid;
+			END IF;
+
+			IF EXISTS (
+				SELECT 1
+				FROM information_schema.columns
+				WHERE table_name = 'status_set_memberships'
+					AND column_name = 'user_id'
+					AND data_type = 'text'
+			) THEN
+				UPDATE status_set_memberships
+				SET user_id = '00000000-0000-4000-8000-000000000001'
+				WHERE user_id = 'local-user';
+
+				UPDATE status_set_memberships
+				SET owner_user_id = '00000000-0000-4000-8000-000000000001'
+				WHERE owner_user_id = 'local-user';
+
+				ALTER TABLE status_set_memberships
+					ALTER COLUMN user_id TYPE UUID USING user_id::uuid,
+					ALTER COLUMN owner_user_id TYPE UUID USING owner_user_id::uuid;
+			END IF;
+		END $$;
 
 		CREATE INDEX IF NOT EXISTS status_set_memberships_status_set_id_idx
 			ON status_set_memberships(status_set_id);
@@ -581,9 +620,9 @@ func (s *PostgresStatusStore) ensureMembership(ctx context.Context, userID strin
 func (s *PostgresStatusStore) ensureMembershipTx(ctx context.Context, tx *sql.Tx, userID string) (statusSetMembership, error) {
 	var membership statusSetMembership
 	err := tx.QueryRowContext(ctx, `
-		SELECT user_id, status_set_id::text, owner_user_id
+		SELECT user_id::text, status_set_id::text, owner_user_id::text
 		FROM status_set_memberships
-		WHERE user_id = $1
+		WHERE user_id = $1::uuid
 	`, userID).Scan(&membership.UserID, &membership.StatusSetID, &membership.OwnerUserID)
 	if err == nil {
 		return membership, nil
@@ -595,7 +634,7 @@ func (s *PostgresStatusStore) ensureMembershipTx(ctx context.Context, tx *sql.Tx
 	statusSetID := uuid.NewString()
 	_, err = tx.ExecContext(ctx, `
 		INSERT INTO status_sets (id, owner_user_id, created_at, updated_at)
-		VALUES ($1, $2, now(), now())
+		VALUES ($1::uuid, $2::uuid, now(), now())
 		ON CONFLICT (owner_user_id) DO NOTHING
 	`, statusSetID, userID)
 	if err != nil {
@@ -605,7 +644,7 @@ func (s *PostgresStatusStore) ensureMembershipTx(ctx context.Context, tx *sql.Tx
 	err = tx.QueryRowContext(ctx, `
 		SELECT id::text
 		FROM status_sets
-		WHERE owner_user_id = $1
+		WHERE owner_user_id = $1::uuid
 	`, userID).Scan(&statusSetID)
 	if err != nil {
 		return statusSetMembership{}, err
@@ -613,7 +652,7 @@ func (s *PostgresStatusStore) ensureMembershipTx(ctx context.Context, tx *sql.Tx
 
 	_, err = tx.ExecContext(ctx, `
 		INSERT INTO status_set_memberships (user_id, status_set_id, owner_user_id, created_at)
-		VALUES ($1, $2, $3, now())
+		VALUES ($1::uuid, $2::uuid, $3::uuid, now())
 		ON CONFLICT (user_id) DO NOTHING
 	`, userID, statusSetID, userID)
 	if err != nil {
@@ -621,9 +660,9 @@ func (s *PostgresStatusStore) ensureMembershipTx(ctx context.Context, tx *sql.Tx
 	}
 
 	err = tx.QueryRowContext(ctx, `
-		SELECT user_id, status_set_id::text, owner_user_id
+		SELECT user_id::text, status_set_id::text, owner_user_id::text
 		FROM status_set_memberships
-		WHERE user_id = $1
+		WHERE user_id = $1::uuid
 	`, userID).Scan(&membership.UserID, &membership.StatusSetID, &membership.OwnerUserID)
 	if err != nil {
 		return statusSetMembership{}, err

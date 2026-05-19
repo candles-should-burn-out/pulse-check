@@ -276,5 +276,5 @@ func currentUserID(r *http.Request) string {
 		return claims.Subject
 	}
 
-	return "local-user"
+	return LocalUserID
 }

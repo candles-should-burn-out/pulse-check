@@ -16,6 +16,7 @@ Pulse Check использует статусы для учета сущност
 
 - каждый аккаунт имеет один status set;
 - при первом обращении пользователя backend создает собственный `status_set` и membership владельца;
+- `user_id` и `owner_user_id` являются UUID пользователя из Keycloak `sub`; backend отклоняет authenticated principal, если `sub` не парсится как UUID;
 - `status_id` является неизменяемым UUID, который генерирует backend;
 - владелец может создавать, редактировать и удалять статусы своего набора;
 - участник использует status set пригласившего пользователя в режиме только для чтения;
@@ -65,7 +66,7 @@ Backend хранит наборы статусов в PostgreSQL.
 | Поле            | Тип           | Constraint | Ограничения                                                 |
 |-----------------|---------------|------------|-------------------------------------------------------------|
 | `id`            | `UUID`        | not null   | Первичный ключ, генерируется backend-ом                     |
-| `owner_user_id` | `TEXT`        | not null   | Уникальный идентификатор владельца из контекста авторизации |
+| `owner_user_id` | `UUID`        | not null   | Уникальный UUID владельца из Keycloak `sub`                 |
 | `created_at`    | `TIMESTAMPTZ` | not null   | Дата создания записи                                        |
 | `updated_at`    | `TIMESTAMPTZ` | not null   | Дата последнего изменения записи                            |
 
@@ -79,9 +80,9 @@ Backend хранит наборы статусов в PostgreSQL.
 
 | Поле            | Тип           | Constraint | Ограничения                                                                                               |
 |-----------------|---------------|------------|-----------------------------------------------------------------------------------------------------------|
-| `user_id`       | `TEXT`        | not null   | Первичный ключ; один status set на аккаунт                                                                |
+| `user_id`       | `UUID`        | not null   | UUID пользователя из Keycloak `sub`; первичный ключ; один status set на аккаунт                            |
 | `status_set_id` | `UUID`        | not null   | Внешний ключ на `status_sets.id` с `ON DELETE CASCADE`; индекс `status_set_memberships_status_set_id_idx` |
-| `owner_user_id` | `TEXT`        | not null   | Идентификатор владельца status set                                                                        |
+| `owner_user_id` | `UUID`        | not null   | UUID владельца status set из Keycloak `sub`                                                               |
 | `created_at`    | `TIMESTAMPTZ` | not null   | Дата создания связи                                                                                       |
 
 Дополнительные заметки:
@@ -123,7 +124,7 @@ Backend хранит наборы статусов в PostgreSQL.
 ```json
 {
   "id": "7d2a6f2b-3d4e-4f6a-9a8b-111111111111",
-  "owner_user_id": "owner-user-id",
+  "owner_user_id": "11111111-1111-4111-8111-111111111111",
   "role": "status_owner",
   "statuses": [
     {

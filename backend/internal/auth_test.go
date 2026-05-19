@@ -20,9 +20,10 @@ import (
 )
 
 const (
-	testIssuer   = "http://keycloak.test/realms/pulse-check"
-	testAudience = "pulse-check-api"
-	testKeyID    = "test-key"
+	testIssuer    = "http://keycloak.test/realms/pulse-check"
+	testAudience  = "pulse-check-api"
+	testKeyID     = "test-key"
+	testSubjectID = "11111111-1111-4111-8111-111111111111"
 )
 
 func TestAuthMiddlewareRejectsMissingToken(t *testing.T) {
@@ -67,8 +68,23 @@ func TestAuthenticatorAcceptsValidToken(t *testing.T) {
 		t.Fatalf("ValidateBearerToken() error = %v", err)
 	}
 
-	if claims.Subject != "user-1" {
-		t.Fatalf("Subject = %q, want user-1", claims.Subject)
+	if claims.Subject != testSubjectID {
+		t.Fatalf("Subject = %q, want %s", claims.Subject, testSubjectID)
+	}
+}
+
+func TestAuthenticatorRejectsNonUUIDSubject(t *testing.T) {
+	authenticator := newTestAuthenticator(t)
+	token := authenticator.signToken(t, tokenClaims{
+		Subject:        "user-1",
+		Issuer:         testIssuer,
+		Audience:       []string{testAudience},
+		ExpirationTime: authenticator.now.Add(time.Hour).Unix(),
+	})
+
+	_, err := authenticator.authenticator.ValidateBearerToken(context.Background(), "Bearer "+token)
+	if err == nil || authErrorCode(err) != "invalid_subject" {
+		t.Fatalf("ValidateBearerToken() error = %v, want invalid subject", err)
 	}
 }
 
@@ -212,7 +228,7 @@ func (auth testAuthenticator) signToken(t *testing.T, claims tokenClaims) string
 	t.Helper()
 
 	if claims.Subject == "" {
-		claims.Subject = "user-1"
+		claims.Subject = testSubjectID
 	}
 
 	return signToken(t, auth.privateKey, testKeyID, claims)

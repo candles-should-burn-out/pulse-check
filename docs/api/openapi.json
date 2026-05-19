@@ -520,7 +520,8 @@
             "format": "uuid"
           },
           "owner_user_id": {
-            "type": "string"
+            "type": "string",
+            "format": "uuid"
           },
           "role": {
             "type": "string",

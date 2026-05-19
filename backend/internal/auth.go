@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/google/uuid"
 )
 
 const authContextKey contextKey = "auth_claims"
@@ -21,6 +22,7 @@ var (
 	errInvalidToken     = errors.New("invalid token")
 	errInvalidIssuer    = errors.New("invalid issuer")
 	errInvalidAudience  = errors.New("invalid audience")
+	errInvalidSubject   = errors.New("invalid subject")
 	errExpiredToken     = errors.New("expired token")
 	errTokenNotValidYet = errors.New("token not valid yet")
 	errMissingRole      = errors.New("missing required role")
@@ -140,6 +142,9 @@ func (a *Authenticator) ValidateToken(ctx context.Context, token string) (*Token
 	}
 
 	claims := rawClaims.toTokenClaims()
+	if _, err := uuid.Parse(claims.Subject); err != nil {
+		return nil, errInvalidSubject
+	}
 	if !claims.hasAudience(a.audience) {
 		return nil, errInvalidAudience
 	}
@@ -267,6 +272,8 @@ func authErrorCode(err error) string {
 		return "invalid_issuer"
 	case errors.Is(err, errInvalidAudience):
 		return "invalid_audience"
+	case errors.Is(err, errInvalidSubject):
+		return "invalid_subject"
 	case errors.Is(err, errExpiredToken):
 		return "expired_token"
 	case errors.Is(err, errTokenNotValidYet):
