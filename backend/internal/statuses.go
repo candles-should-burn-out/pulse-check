@@ -305,10 +305,6 @@ func NewPostgresStatusStore(ctx context.Context, databaseURL string, maxStatuses
 		_ = db.Close()
 		return nil, err
 	}
-	if err := store.initSchema(ctx); err != nil {
-		_ = db.Close()
-		return nil, err
-	}
 
 	return store, nil
 }
@@ -509,94 +505,6 @@ func (s *PostgresStatusStore) DeleteStatus(ctx context.Context, userID string, s
 
 func (s *PostgresStatusStore) Close() error {
 	return s.db.Close()
-}
-
-func (s *PostgresStatusStore) initSchema(ctx context.Context) error {
-	_, err := s.db.ExecContext(ctx, `
-		CREATE TABLE IF NOT EXISTS status_sets (
-			id UUID PRIMARY KEY,
-			owner_user_id UUID NOT NULL UNIQUE,
-			created_at TIMESTAMPTZ NOT NULL,
-			updated_at TIMESTAMPTZ NOT NULL
-		);
-
-		CREATE TABLE IF NOT EXISTS status_set_memberships (
-			user_id UUID PRIMARY KEY,
-			status_set_id UUID NOT NULL REFERENCES status_sets(id) ON DELETE CASCADE,
-			owner_user_id UUID NOT NULL,
-			created_at TIMESTAMPTZ NOT NULL
-		);
-
-		DO $$
-		BEGIN
-			IF EXISTS (
-				SELECT 1
-				FROM information_schema.columns
-				WHERE table_name = 'status_sets'
-					AND column_name = 'owner_user_id'
-					AND data_type = 'text'
-			) THEN
-				UPDATE status_sets
-				SET owner_user_id = '00000000-0000-4000-8000-000000000001'
-				WHERE owner_user_id = 'local-user';
-
-				ALTER TABLE status_sets
-					ALTER COLUMN owner_user_id TYPE UUID USING owner_user_id::uuid;
-			END IF;
-
-			IF EXISTS (
-				SELECT 1
-				FROM information_schema.columns
-				WHERE table_name = 'status_set_memberships'
-					AND column_name = 'user_id'
-					AND data_type = 'text'
-			) THEN
-				UPDATE status_set_memberships
-				SET user_id = '00000000-0000-4000-8000-000000000001'
-				WHERE user_id = 'local-user';
-
-				UPDATE status_set_memberships
-				SET owner_user_id = '00000000-0000-4000-8000-000000000001'
-				WHERE owner_user_id = 'local-user';
-
-				ALTER TABLE status_set_memberships
-					ALTER COLUMN user_id TYPE UUID USING user_id::uuid,
-					ALTER COLUMN owner_user_id TYPE UUID USING owner_user_id::uuid;
-			END IF;
-		END $$;
-
-		CREATE INDEX IF NOT EXISTS status_set_memberships_status_set_id_idx
-			ON status_set_memberships(status_set_id);
-
-		CREATE TABLE IF NOT EXISTS statuses (
-			id UUID PRIMARY KEY,
-			status_set_id UUID NOT NULL REFERENCES status_sets(id) ON DELETE CASCADE,
-			name TEXT NOT NULL CHECK (char_length(name) <= 40),
-			border_color CHAR(7) NOT NULL CHECK (border_color ~ '^#[0-9A-Fa-f]{6}$'),
-			background_color CHAR(7) NOT NULL CHECK (background_color ~ '^#[0-9A-Fa-f]{6}$'),
-			text_color CHAR(7) NOT NULL CHECK (text_color ~ '^#[0-9A-Fa-f]{6}$'),
-			created_at TIMESTAMPTZ NOT NULL,
-			updated_at TIMESTAMPTZ NOT NULL
-		);
-
-		CREATE INDEX IF NOT EXISTS statuses_status_set_id_idx
-			ON statuses(status_set_id);
-
-		DO $$
-		BEGIN
-			IF NOT EXISTS (
-				SELECT 1
-				FROM pg_constraint
-				WHERE conname = 'statuses_name_length_check'
-					AND conrelid = 'statuses'::regclass
-			) THEN
-				ALTER TABLE statuses
-					ADD CONSTRAINT statuses_name_length_check CHECK (char_length(name) <= 40) NOT VALID;
-			END IF;
-		END $$;
-	`)
-
-	return err
 }
 
 func (s *PostgresStatusStore) ensureMembership(ctx context.Context, userID string) (statusSetMembership, error) {

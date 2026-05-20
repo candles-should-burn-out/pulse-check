@@ -20,6 +20,8 @@ services:
     expose:
       - "8080"
     depends_on:
+      backend-migrate:
+        condition: service_completed_successfully
       pulse-check-postgres:
         condition: service_healthy
       keycloak:
@@ -30,6 +32,19 @@ services:
       timeout: 3s
       retries: 5
       start_period: 10s
+
+  backend-migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: pulse-check-backend:production
+    entrypoint: ["/app/pulse-check-migrate"]
+    command: ["up"]
+    environment:
+      DATABASE_URL: postgres://${PULSE_CHECK_DB_USER:-pulse_check}:${PULSE_CHECK_DB_PASSWORD:?set PULSE_CHECK_DB_PASSWORD}@pulse-check-postgres:5432/${PULSE_CHECK_DB_NAME:-pulse_check}?sslmode=disable
+    depends_on:
+      pulse-check-postgres:
+        condition: service_healthy
 
   frontend:
     build:

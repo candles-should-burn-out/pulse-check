@@ -26,6 +26,30 @@ The OpenAPI 3.0 schema is maintained in [`../docs/api/openapi.json`](../docs/api
 
 The application handles `SIGINT` and `SIGTERM`, flips readiness to false, and gracefully shuts down the HTTP server.
 
+## Database migrations
+
+Backend schema changes live in [`migrations`](migrations) as goose SQL migrations. The application does not create or change tables at runtime; apply migrations before starting it with PostgreSQL.
+
+Local Docker tasks:
+
+```sh
+task migrate:up
+task migrate:status
+task migrate:version
+```
+
+Direct local runner from `backend`:
+
+```sh
+DATABASE_URL=postgres://pulse_check:change-me@localhost:5432/pulse_check?sslmode=disable go run ./cmd/migrate up
+```
+
+Production compose hosts can run:
+
+```sh
+COMPOSE_FILE=production-compose.example.yaml ../scripts/migrate-production.sh up
+```
+
 ## Tracing
 
 The service uses OpenTelemetry HTTP instrumentation and exports traces through OTLP/HTTP. It supports W3C Trace Context through the `Traceparent` header, and access logs include `trace_id` and `span_id`.

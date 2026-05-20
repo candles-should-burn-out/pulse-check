@@ -18,6 +18,8 @@ services:
     ports:
       - "8080:8080"
     depends_on:
+      backend-migrate:
+        condition: service_completed_successfully
       pulse-check-postgres:
         condition: service_healthy
       keycloak-seed:
@@ -30,6 +32,19 @@ services:
       timeout: 3s
       retries: 5
       start_period: 5s
+
+  backend-migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: pulse-check-backend:local
+    entrypoint: ["/app/pulse-check-migrate"]
+    command: ["up"]
+    environment:
+      DATABASE_URL: postgres://pulse_check:pulse-check-local-app-db-password@pulse-check-postgres:5432/pulse_check?sslmode=disable
+    depends_on:
+      pulse-check-postgres:
+        condition: service_healthy
 
   frontend:
     build:

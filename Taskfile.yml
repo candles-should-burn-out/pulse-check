@@ -63,6 +63,40 @@ tasks:
     cmds:
       - "{{.COMPOSE}} ps"
 
+  db-up:
+    desc: Start only the local application database
+    cmds:
+      - "{{.COMPOSE}} up -d pulse-check-postgres"
+
+  migrate:up:
+    desc: Apply local backend database migrations
+    cmds:
+      - task: db-up
+      - "{{.COMPOSE}} build backend"
+      - "{{.COMPOSE}} run --rm --no-deps --entrypoint /app/pulse-check-migrate backend up"
+
+  migrate:status:
+    desc: Show local backend database migration status
+    cmds:
+      - task: db-up
+      - "{{.COMPOSE}} build backend"
+      - "{{.COMPOSE}} run --rm --no-deps --entrypoint /app/pulse-check-migrate backend status"
+
+  migrate:version:
+    desc: Show local backend database migration version
+    cmds:
+      - task: db-up
+      - "{{.COMPOSE}} build backend"
+      - "{{.COMPOSE}} run --rm --no-deps --entrypoint /app/pulse-check-migrate backend version"
+
+  migrate:down:
+    desc: Roll back one local backend database migration
+    prompt: This will roll back one local backend database migration. Continue?
+    cmds:
+      - task: db-up
+      - "{{.COMPOSE}} build backend"
+      - "{{.COMPOSE}} run --rm --no-deps --entrypoint /app/pulse-check-migrate backend down"
+
   clean:
     desc: Stop the stack and remove local images
     cmds:
