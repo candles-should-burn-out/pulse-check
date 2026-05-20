@@ -140,6 +140,34 @@ services:
       retries: 20
       start_period: 60s
 
+  backup:
+    build:
+      context: ./ops/backup
+      dockerfile: Dockerfile
+    image: pulse-check-backup:production
+    profiles: ["ops"]
+    environment:
+      PULSE_CHECK_DB_HOST: pulse-check-postgres
+      PULSE_CHECK_DB_NAME: ${PULSE_CHECK_DB_NAME:-pulse_check}
+      PULSE_CHECK_DB_USER: ${PULSE_CHECK_DB_USER:-pulse_check}
+      PULSE_CHECK_DB_PASSWORD: ${PULSE_CHECK_DB_PASSWORD:-}
+      KEYCLOAK_DB_HOST: keycloak-postgres
+      KEYCLOAK_DB_NAME: ${KEYCLOAK_DB_NAME:-keycloak}
+      KEYCLOAK_DB_USER: ${KEYCLOAK_DB_USER:-keycloak}
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-}
+      BACKUP_REMOTE_HOST: ${BACKUP_REMOTE_HOST:-}
+      BACKUP_REMOTE_USER: ${BACKUP_REMOTE_USER:-}
+      BACKUP_REMOTE_DIR: ${BACKUP_REMOTE_DIR:-}
+      BACKUP_SSH_KEY_PATH: /run/secrets/backup_ssh_key
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+    volumes:
+      - ${BACKUP_SSH_KEY_FILE:-./.backup/backup_ssh_key}:/run/secrets/backup_ssh_key:ro
+    depends_on:
+      pulse-check-postgres:
+        condition: service_healthy
+      keycloak-postgres:
+        condition: service_healthy
+
 volumes:
   keycloak-postgres-data:
   pulse-check-postgres-data:
